@@ -105,12 +105,6 @@ export const ExamScorecardPrintModal: React.FC<ExamScorecardPrintModalProps> = (
                   <span className="text-slate-500">Họ và tên thí sinh:</span>{' '}
                   <strong className="text-sm font-black text-slate-900">{student?.fullName}</strong>
                 </div>
-                {student?.dharmaName && (
-                  <div>
-                    <span className="text-slate-500">Pháp danh:</span>{' '}
-                    <strong className="text-amber-800 font-bold">{student.dharmaName}</strong>
-                  </div>
-                )}
                 <div>
                   <span className="text-slate-500">Mã võ sinh:</span>{' '}
                   <strong className="font-mono">{student?.code}</strong>

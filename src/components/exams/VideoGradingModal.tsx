@@ -100,11 +100,6 @@ export const VideoGradingModal: React.FC<VideoGradingModalProps> = ({
               <span className="font-bold text-slate-900 text-sm">
                 {video.studentName}
               </span>
-              {student?.dharmaName && (
-                <span className="px-2 py-0.5 rounded-md bg-blue-100 text-[#0072de] font-semibold text-[10px]">
-                  PD: {student.dharmaName}
-                </span>
-              )}
             </div>
             <p className="text-slate-500 mt-0.5">
               Đơn vị: <strong className="text-slate-700">{club?.name || 'CLB'}</strong> &bull; Bài thi:{' '}

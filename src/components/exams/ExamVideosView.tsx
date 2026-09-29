@@ -272,11 +272,6 @@ export const ExamVideosView: React.FC<ExamVideosViewProps> = ({
                       <h3 className="font-bold text-slate-900 text-sm">
                         {vid.studentName}
                       </h3>
-                      {student?.dharmaName && (
-                        <span className="text-[10px] text-[#0072de] font-semibold block">
-                          PD: {student.dharmaName}
-                        </span>
-                      )}
                       <span className="text-[11px] text-slate-500 font-medium">
                         {club?.name || 'CLB'}
                       </span>

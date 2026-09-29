@@ -22,7 +22,6 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
   const { clubs, addStudent, updateStudent, addToast } = useApp();
 
   const [fullName, setFullName] = useState('');
-  const [dharmaName, setDharmaName] = useState('');
   const [code, setCode] = useState('');
   const [dob, setDob] = useState('2005-01-01');
   const [birthYear, setBirthYear] = useState<number | string>(2005);
@@ -30,6 +29,8 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
+  const [height, setHeight] = useState<number | string>('');
+  const [weight, setWeight] = useState<number | string>('');
   const [birthPlace, setBirthPlace] = useState('Bà Rịa - Vũng Tàu');
   const [clubId, setClubId] = useState(clubs[0]?.id || '');
   const [unitName, setUnitName] = useState('');
@@ -50,7 +51,6 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
   useEffect(() => {
     if (studentToEdit) {
       setFullName(studentToEdit.fullName || '');
-      setDharmaName(studentToEdit.dharmaName || '');
       setCode(studentToEdit.code || '');
       setDob(studentToEdit.dob || '2005-01-01');
       setBirthYear(studentToEdit.birthYear || (studentToEdit.dob ? studentToEdit.dob.split('-')[0] : 2005));
@@ -58,6 +58,8 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
       setPhone(studentToEdit.phone || '');
       setEmail(studentToEdit.email || '');
       setAddress(studentToEdit.address || '');
+      setHeight(studentToEdit.height || '');
+      setWeight(studentToEdit.weight || '');
       setBirthPlace(studentToEdit.birthPlace || 'Bà Rịa - Vũng Tàu');
       setClubId(studentToEdit.clubId || clubs[0]?.id || '');
       const club = clubs.find(c => c.id === (studentToEdit.clubId || clubs[0]?.id));
@@ -77,7 +79,6 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
       setNotes(studentToEdit.notes || '');
     } else {
       setFullName('');
-      setDharmaName('');
       const targetClub = defaultClubId ? clubs.find(c => c.id === defaultClubId) : clubs[0];
       const clubCode = targetClub ? targetClub.code.replace('CLB-', '') : 'PQQ';
       const randomNum = Math.floor(100 + Math.random() * 900);
@@ -88,6 +89,8 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
       setPhone('');
       setEmail('');
       setAddress('');
+      setHeight('');
+      setWeight('');
       setBirthPlace(targetClub?.address.includes('Đồng Nai') ? 'Đồng Nai' : 'Bà Rịa - Vũng Tàu');
       setClubId(defaultClubId || clubs[0]?.id || '');
       setUnitName(targetClub?.name || '');
@@ -125,6 +128,29 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
 
   if (!isOpen) return null;
 
+  // Rút gọn địa chỉ chỉ lưu theo Tỉnh/TP
+  const formatCityProvince = (addr?: string) => {
+    if (!addr || !addr.trim()) return 'Bà Rịa - Vũng Tàu';
+    const trimmed = addr.trim();
+    if (trimmed.includes(',')) {
+      const parts = trimmed.split(',').map(p => p.trim()).filter(Boolean);
+      return parts[parts.length - 1]; // Lấy Tỉnh/Thành phố
+    }
+    return trimmed;
+  };
+
+  // Chuẩn hóa trình độ văn hóa theo định dạng /12
+  const formatEducation = (val?: string) => {
+    if (!val || !val.trim()) return '12/12';
+    const clean = val.trim();
+    if (clean.includes('/12')) return clean;
+    const matchNum = clean.match(/\b(\d{1,2})\b/);
+    if (matchNum) {
+      return `${matchNum[1]}/12`;
+    }
+    return `${clean}/12`;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName.trim()) {
@@ -134,19 +160,24 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
 
     const bConfig = getBeltConfig(currentBelt);
     const finalDiploma = diplomaName.trim() || `${bConfig.name} Cấp ${currentBeltLevel}`;
+    const cleanAddress = formatCityProvince(address);
+    const cleanEducationLevel = formatEducation(educationLevel);
+    const numHeight = height !== '' && !isNaN(Number(height)) ? Number(height) : undefined;
+    const numWeight = weight !== '' && !isNaN(Number(weight)) ? Number(weight) : undefined;
 
     if (studentToEdit) {
       updateStudent({
         ...studentToEdit,
         fullName: fullName.trim(),
-        dharmaName: dharmaName.trim() || undefined,
         code: code.trim(),
         dob,
         birthYear: Number(birthYear) || (dob ? Number(dob.split('-')[0]) : 2005),
         gender,
+        height: numHeight,
+        weight: numWeight,
         phone: phone.trim(),
         email: email.trim() || undefined,
-        address: address.trim(),
+        address: cleanAddress,
         birthPlace: birthPlace.trim() || 'Bà Rịa - Vũng Tàu',
         clubId,
         unitName: unitName.trim(),
@@ -156,7 +187,7 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
         diplomaIssueDate: diplomaIssueDate || undefined,
         diplomaIssuePlace: diplomaIssuePlace.trim(),
         diplomaIssuingAuthority: diplomaIssuingAuthority.trim(),
-        educationLevel: educationLevel.trim(),
+        educationLevel: cleanEducationLevel,
         coachName: coachName.trim(),
         avatarUrl: avatarUrl.trim() || undefined,
         joinDate,
@@ -167,14 +198,15 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
     } else {
       addStudent({
         fullName: fullName.trim(),
-        dharmaName: dharmaName.trim() || undefined,
         code: code.trim(),
         dob,
         birthYear: Number(birthYear) || (dob ? Number(dob.split('-')[0]) : 2005),
         gender,
+        height: numHeight,
+        weight: numWeight,
         phone: phone.trim(),
         email: email.trim() || undefined,
-        address: address.trim(),
+        address: cleanAddress,
         birthPlace: birthPlace.trim() || 'Bà Rịa - Vũng Tàu',
         clubId,
         unitName: unitName.trim(),
@@ -184,7 +216,7 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
         diplomaIssueDate: diplomaIssueDate || undefined,
         diplomaIssuePlace: diplomaIssuePlace.trim(),
         diplomaIssuingAuthority: diplomaIssuingAuthority.trim(),
-        educationLevel: educationLevel.trim(),
+        educationLevel: cleanEducationLevel,
         coachName: coachName.trim(),
         avatarUrl: avatarUrl.trim() || undefined,
         joinDate,
@@ -247,19 +279,6 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Pháp Danh
-                </label>
-                <input
-                  type="text"
-                  value={dharmaName}
-                  onChange={e => setDharmaName(e.target.value)}
-                  placeholder="Thiện Tâm"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-amber-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
                   Năm Sinh <span className="text-rose-500">*</span>
                 </label>
                 <input
@@ -312,15 +331,41 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
                 />
               </div>
 
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Chiều Cao (cm)
+                </label>
+                <input
+                  type="number"
+                  value={height}
+                  onChange={e => setHeight(e.target.value)}
+                  placeholder="165"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Cân Nặng (kg)
+                </label>
+                <input
+                  type="number"
+                  value={weight}
+                  onChange={e => setWeight(e.target.value)}
+                  placeholder="60"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+
               <div className="sm:col-span-2">
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Địa Chỉ Thường Trú
+                  Địa Chỉ Thường Trú (Tỉnh / Thành phố)
                 </label>
                 <input
                   type="text"
                   value={address}
                   onChange={e => setAddress(e.target.value)}
-                  placeholder="Thị xã/Huyện, Tỉnh..."
+                  placeholder="Bà Rịa - Vũng Tàu, TP. Hồ Chí Minh, Đồng Nai..."
                   className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-amber-500"
                 />
               </div>
@@ -340,6 +385,19 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Trình Độ Văn Hóa (tính theo /12)
+                </label>
+                <input
+                  type="text"
+                  value={educationLevel}
+                  onChange={e => setEducationLevel(e.target.value)}
+                  placeholder="12/12, 11/12, 10/12..."
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-bold text-slate-700 mb-1">
                   Trạng Thái Học Tập
                 </label>
                 <select
@@ -352,19 +410,6 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
                   <option value="INACTIVE">Nghỉ (Đã thôi học)</option>
                   <option value="TRANSFERRED">Chuyển CLB</option>
                 </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Trình Độ Văn Hóa
-                </label>
-                <input
-                  type="text"
-                  value={educationLevel}
-                  onChange={e => setEducationLevel(e.target.value)}
-                  placeholder="12/12, Đại học, THCS..."
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-amber-500"
-                />
               </div>
             </div>
           </div>

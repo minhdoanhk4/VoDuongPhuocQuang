@@ -130,7 +130,6 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ clubId }) => {
     const term = searchTerm.toLowerCase();
     return clubStudents.filter(s =>
       s.fullName.toLowerCase().includes(term) ||
-      (s.dharmaName && s.dharmaName.toLowerCase().includes(term)) ||
       s.code.toLowerCase().includes(term) ||
       s.phone.includes(term)
     );
@@ -262,7 +261,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ clubId }) => {
                     type="text"
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
-                    placeholder="Tìm tên, pháp danh..."
+                    placeholder="Tìm tên, mã võ sinh..."
                     className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50/60"
                   />
                 </div>
@@ -343,7 +342,6 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ clubId }) => {
                     <th className="py-3 px-3 text-center w-12">STT</th>
                     <th className="py-3 px-4">Mã VS</th>
                     <th className="py-3 px-4">Họ và Tên</th>
-                    <th className="py-3 px-3">Pháp danh</th>
                     <th className="py-3 px-3">Cấp đai</th>
                     <th className="py-3 px-4 text-center">Trạng Thái Điểm Danh</th>
                     <th className="py-3 px-4">Ghi chú</th>
@@ -352,7 +350,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ clubId }) => {
                 <tbody className="divide-y divide-slate-100">
                   {filteredStudents.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="py-12 text-center text-slate-400">
+                      <td colSpan={6} className="py-12 text-center text-slate-400">
                         Không có võ sinh nào thuộc CLB này hoặc không khớp với từ khóa tìm kiếm.
                       </td>
                     </tr>
@@ -371,9 +369,6 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ clubId }) => {
                           </td>
                           <td className="py-3 px-4 font-bold text-slate-900">
                             {student.fullName}
-                          </td>
-                          <td className="py-3 px-3 text-slate-600 italic">
-                            {student.dharmaName || '---'}
                           </td>
                           <td className="py-3 px-3">
                             <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${beltCfg.badgeBg}`}>

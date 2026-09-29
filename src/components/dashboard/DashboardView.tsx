@@ -354,11 +354,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                           <span className="font-bold text-xs text-slate-900 truncate">
                             {student?.fullName || 'Võ sinh'}
                           </span>
-                          {student?.dharmaName && (
-                            <span className="text-[10px] text-[#0072de] font-medium px-1.5 py-0.5 rounded-full bg-blue-50">
-                              PD: {student.dharmaName}
-                            </span>
-                          )}
                         </div>
                         <div className="mt-1 flex items-center gap-2 text-[11px] text-slate-500">
                           <span

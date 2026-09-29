@@ -10,6 +10,12 @@ export const LoginView: React.FC = () => {
   const handleLogin = () => {
     setIsLoading(true);
     setTimeout(() => {
+      try {
+        localStorage.setItem('pqq_last_route', '#/');
+        window.location.hash = '#/';
+      } catch {
+        // ignore
+      }
       login('ADMIN', 'Admin');
       setIsLoading(false);
     }, 350);

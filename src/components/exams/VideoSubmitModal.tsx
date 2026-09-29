@@ -163,7 +163,7 @@ export const VideoSubmitModal: React.FC<VideoSubmitModalProps> = ({
                   const cfg = getBeltConfig(s.currentBelt);
                   return (
                     <option key={s.id} value={s.id}>
-                      {s.fullName} {s.dharmaName ? `(PD: ${s.dharmaName})` : ''} - Đai: {cfg.name}
+                      {s.fullName} - Đai: {cfg.name}
                     </option>
                   );
                 })}

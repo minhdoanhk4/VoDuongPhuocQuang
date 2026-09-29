@@ -102,7 +102,7 @@ export const ExamGradingModal: React.FC<ExamGradingModalProps> = ({
         <div className="px-6 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
           <div>
             <div className="font-bold text-sm text-slate-900">
-              {student?.fullName} {student?.dharmaName ? `(${student.dharmaName})` : ''}
+              {student?.fullName}
             </div>
             <div className="text-[11px] text-slate-500 font-mono">
               Mã VS: {student?.code}

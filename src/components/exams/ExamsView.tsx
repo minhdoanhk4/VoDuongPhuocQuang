@@ -279,11 +279,6 @@ export const ExamsView: React.FC = () => {
                         <tr key={sheet.id} className="hover:bg-slate-50/80 transition-colors">
                           <td className="py-3 px-4">
                             <div className="font-bold text-slate-900">{student?.fullName}</div>
-                            {student?.dharmaName && (
-                              <div className="text-[10px] text-amber-700 font-semibold">
-                                PD: {student.dharmaName}
-                              </div>
-                            )}
                             <div className="text-[10px] text-slate-400 font-mono">{student?.code}</div>
                           </td>
 

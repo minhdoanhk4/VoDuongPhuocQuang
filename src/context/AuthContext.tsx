@@ -84,6 +84,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       localStorage.removeItem(AUTH_STORAGE_KEY);
       localStorage.removeItem(LEGACY_AUTH_STORAGE_KEY);
+      localStorage.removeItem('pqq_last_route');
+      window.location.hash = '#/';
     } catch {
       // ignore
     }
@@ -119,6 +121,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(sessionData));
+      localStorage.setItem('pqq_last_route', '#/');
+      window.location.hash = '#/';
     } catch (e) {
       console.error('Không thể lưu phiên đăng nhập:', e);
     }

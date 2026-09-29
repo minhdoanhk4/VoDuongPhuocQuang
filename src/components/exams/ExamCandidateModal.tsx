@@ -116,7 +116,7 @@ export const ExamCandidateModal: React.FC<ExamCandidateModalProps> = ({
                     const b = getBeltConfig(s.currentBelt);
                     return (
                       <option key={s.id} value={s.id}>
-                        {s.fullName} {s.dharmaName ? `(${s.dharmaName})` : ''} - {b.name} Cấp {s.currentBeltLevel} [{club?.name || 'PQQ'}]
+                        {s.fullName} - {b.name} Cấp {s.currentBeltLevel} [{club?.name || 'PQQ'}]
                       </option>
                     );
                   })}

@@ -135,11 +135,6 @@ export const CertificatePreviewModal: React.FC<CertificatePreviewModalProps> = (
                   <div className="text-2xl sm:text-3xl font-black text-slate-900 tracking-wide font-serif">
                     {student?.fullName}
                   </div>
-                  {student?.dharmaName && (
-                    <div className="text-sm font-bold text-amber-800 mt-0.5">
-                      Pháp danh: {student.dharmaName}
-                    </div>
-                  )}
                 </div>
 
                 <div className="flex items-center justify-center gap-4 text-xs text-slate-600">

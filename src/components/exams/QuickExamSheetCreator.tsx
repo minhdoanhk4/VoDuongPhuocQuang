@@ -76,9 +76,8 @@ export const QuickExamSheetCreator: React.FC<QuickExamSheetCreatorProps> = ({
       if (searchTerm.trim()) {
         const term = searchTerm.toLowerCase();
         const matchName = s.fullName.toLowerCase().includes(term);
-        const matchDharma = s.dharmaName ? s.dharmaName.toLowerCase().includes(term) : false;
         const matchPhone = s.phone.includes(term);
-        return matchName || matchDharma || matchPhone;
+        return matchName || matchPhone;
       }
       return true;
     });
@@ -356,11 +355,6 @@ export const QuickExamSheetCreator: React.FC<QuickExamSheetCreatorProps> = ({
 
                       <td className="py-3 px-4 font-bold text-slate-900">
                         <span>{student.fullName}</span>
-                        {student.dharmaName && (
-                          <span className="text-[10px] text-[#0072de] ml-1.5 font-normal">
-                            (PD: {student.dharmaName})
-                          </span>
-                        )}
                         <span className="text-[10px] font-mono text-slate-400 block">{student.code}</span>
                       </td>
 

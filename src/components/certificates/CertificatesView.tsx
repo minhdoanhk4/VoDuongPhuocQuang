@@ -42,8 +42,7 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ initialSelec
         const term = searchTerm.toLowerCase();
         const matchNum = cert.certNumber.toLowerCase().includes(term);
         const matchName = student ? student.fullName.toLowerCase().includes(term) : false;
-        const matchDharma = student?.dharmaName ? student.dharmaName.toLowerCase().includes(term) : false;
-        return matchNum || matchName || matchDharma;
+        return matchNum || matchName;
       }
       return true;
     });
@@ -170,12 +169,6 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ initialSelec
                   <h3 className="font-black text-base text-slate-900 mt-2 group-hover:text-purple-900 transition-colors">
                     {student?.fullName || 'Võ sinh'}
                   </h3>
-
-                  {student?.dharmaName && (
-                    <div className="text-xs font-semibold text-amber-700 mt-0.5">
-                      Pháp danh: {student.dharmaName}
-                    </div>
-                  )}
 
                   <div className="mt-3 pt-2 border-t border-slate-100 text-xs text-slate-500 space-y-1">
                     <div className="flex items-center justify-between">

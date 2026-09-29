@@ -115,8 +115,21 @@ const AppContent: React.FC = () => {
   const { clubs, students, certificates, settings, syncStatus, syncToGoogleSheet } = useApp();
   const { isUnlocked, userRole, userName, logout } = useAuth();
 
-  // Khôi phục URL route hiện tại từ URL hash hoặc localStorage để khi reload không bị back về home
+  // Khôi phục URL route: nếu chưa đăng nhập hoặc vừa login, luôn luôn bắt đầu từ 'home'
   const initialRoute = React.useMemo(() => {
+    try {
+      const savedAuth = localStorage.getItem('pqq_auth_session_v2');
+      if (!savedAuth) {
+        return {
+          view: 'home' as AppView,
+          clubId: 'clb-pq1',
+          clubTab: 'overview' as ClubWorkspaceTab,
+          attendanceSubPage: 'taking' as 'taking' | 'history' | 'report'
+        };
+      }
+    } catch {
+      // ignore
+    }
     const hash = window.location.hash;
     if (hash && hash !== '#' && hash !== '#/') {
       return parseHashRoute(hash);
@@ -144,6 +157,25 @@ const AppContent: React.FC = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isClubFormOpen, setIsClubFormOpen] = useState(false);
   const [workspaceSearchQuery, setWorkspaceSearchQuery] = useState('');
+
+  // Theo dõi trạng thái đăng nhập: Khi người dùng bấm Login (từ false -> true)
+  // Lộ trình PHẢI LUÔN LUÔN là: Login => Home => CLB... (không bao giờ nhảy thẳng vào CLB)
+  const prevUnlockedRef = useRef(isUnlocked);
+  useEffect(() => {
+    if (!prevUnlockedRef.current && isUnlocked) {
+      setCurrentView('home');
+      setSelectedClubId('clb-pq1');
+      setCurrentClubTab('overview');
+      setCurrentAttendanceSubPage('taking');
+      window.location.hash = '#/';
+      try {
+        localStorage.setItem('pqq_last_route', '#/');
+      } catch {
+        // ignore
+      }
+    }
+    prevUnlockedRef.current = isUnlocked;
+  }, [isUnlocked]);
 
   // Đồng bộ URL hash và localStorage mỗi khi chuyển trang / tab
   useEffect(() => {
@@ -465,6 +497,16 @@ const AppContent: React.FC = () => {
                     <button
                       onClick={() => {
                         setIsProfileOpen(false);
+                        setCurrentView('home');
+                        setSelectedClubId('clb-pq1');
+                        setCurrentClubTab('overview');
+                        setCurrentAttendanceSubPage('taking');
+                        window.location.hash = '#/';
+                        try {
+                          localStorage.setItem('pqq_last_route', '#/');
+                        } catch {
+                          // ignore
+                        }
                         logout();
                       }}
                       className="w-full py-2.5 px-4 rounded-2xl border border-rose-200 bg-rose-50/50 text-rose-600 font-bold hover:bg-rose-50 text-sm transition-colors cursor-pointer block text-center"

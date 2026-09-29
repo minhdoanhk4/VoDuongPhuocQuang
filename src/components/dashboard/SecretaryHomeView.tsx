@@ -61,12 +61,11 @@ export const SecretaryHomeView: React.FC<SecretaryHomeViewProps> = ({
       if (searchTerm.trim()) {
         const term = searchTerm.toLowerCase();
         const matchName = s.fullName.toLowerCase().includes(term);
-        const matchDharma = s.dharmaName ? s.dharmaName.toLowerCase().includes(term) : false;
         const matchPhone = s.phone.includes(term);
         const matchAddress = s.address ? s.address.toLowerCase().includes(term) : false;
         const matchCoach = s.coachName ? s.coachName.toLowerCase().includes(term) : false;
         const matchDiploma = s.diplomaName ? s.diplomaName.toLowerCase().includes(term) : false;
-        return matchName || matchDharma || matchPhone || matchAddress || matchCoach || matchDiploma;
+        return matchName || matchPhone || matchAddress || matchCoach || matchDiploma;
       }
       return true;
     });
@@ -302,11 +301,6 @@ export const SecretaryHomeView: React.FC<SecretaryHomeViewProps> = ({
                         >
                           {student.fullName}
                         </button>
-                        {student.dharmaName && (
-                          <span className="text-[10px] text-[#0072de] font-semibold block">
-                            PD: {student.dharmaName}
-                          </span>
-                        )}
                       </td>
 
                       {/* Năm sinh */}

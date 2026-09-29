@@ -323,11 +323,6 @@ export const ClubAttendanceModal: React.FC<ClubAttendanceModalProps> = ({
                             <div className="font-bold text-slate-900 text-sm">
                               {student.fullName}
                             </div>
-                            {student.dharmaName && (
-                              <div className="text-[11px] font-medium text-amber-700">
-                                PD: {student.dharmaName}
-                              </div>
-                            )}
                           </td>
 
                           {/* Năm sinh */}

@@ -44,10 +44,9 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
       if (searchTerm.trim()) {
         const term = searchTerm.toLowerCase();
         const matchName = student.fullName.toLowerCase().includes(term);
-        const matchDharma = student.dharmaName ? student.dharmaName.toLowerCase().includes(term) : false;
         const matchCode = student.code.toLowerCase().includes(term);
         const matchPhone = student.phone.includes(term);
-        return matchName || matchDharma || matchCode || matchPhone;
+        return matchName || matchCode || matchPhone;
       }
       return true;
     });
@@ -200,7 +199,6 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
                 <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[11px]">
                   <th className="py-3 px-4">Mã VS</th>
                   <th className="py-3 px-4">Họ và Tên</th>
-                  <th className="py-3 px-4">Pháp Danh</th>
                   <th className="py-3 px-4">CLB Trực Thuộc</th>
                   <th className="py-3 px-4">Cấp Đai</th>
                   <th className="py-3 px-4">Ngày Nhập Môn</th>
@@ -227,9 +225,6 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
                         >
                           {student.fullName}
                         </button>
-                      </td>
-                      <td className="py-3 px-4 font-semibold text-amber-800">
-                        {student.dharmaName || '---'}
                       </td>
                       <td className="py-3 px-4 text-slate-700 font-medium">
                         {club?.name || '---'}
@@ -323,12 +318,6 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
                   >
                     {student.fullName}
                   </h3>
-
-                  {student.dharmaName && (
-                    <p className="text-xs font-semibold text-amber-700 mt-0.5">
-                      Pháp danh: {student.dharmaName}
-                    </p>
-                  )}
 
                   <div className="mt-3 pt-2 border-t border-slate-100 text-xs text-slate-500 space-y-1">
                     <div className="flex items-center gap-1.5 text-slate-700">

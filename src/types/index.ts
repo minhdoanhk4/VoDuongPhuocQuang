@@ -119,7 +119,6 @@ export interface Student {
   id: string;
   code: string; // Mã võ sinh: PQQ-CLB-2026-001
   fullName: string;
-  dharmaName?: string; // Pháp danh (nếu có)
   dob: string; // YYYY-MM-DD
   birthYear?: number | string; // Năm sinh (VD: 2005)
   gender: 'Nam' | 'Nữ' | 'Khác';

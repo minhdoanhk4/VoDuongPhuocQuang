@@ -271,11 +271,6 @@ export const ClubHierarchyView: React.FC<ClubHierarchyViewProps> = ({
                                       {student.fullName}
                                     </span>
                                   </div>
-                                  {student.dharmaName && (
-                                    <div className="text-[11px] font-semibold text-amber-700 mt-0.5">
-                                      Pháp danh: {student.dharmaName}
-                                    </div>
-                                  )}
                                   <div className="text-[10px] text-slate-400 font-mono mt-0.5">
                                     {student.code}
                                   </div>

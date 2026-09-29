@@ -163,7 +163,7 @@ export const CertificateFormModal: React.FC<CertificateFormModalProps> = ({
             >
               {students.map(s => (
                 <option key={s.id} value={s.id}>
-                  {s.fullName} {s.dharmaName ? `(${s.dharmaName})` : ''} - {s.code}
+                  {s.fullName} - {s.code}
                 </option>
               ))}
             </select>
