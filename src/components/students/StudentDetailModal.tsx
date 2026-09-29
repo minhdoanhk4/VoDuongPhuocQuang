@@ -42,20 +42,27 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4">
+    <div 
+      className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 animate-in fade-in duration-150"
+      onClick={e => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div className="relative bg-white rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden border border-slate-200">
         {/* Banner with belt color */}
         <div
-          className="h-28 relative flex items-end px-4 sm:px-6 pb-4"
+          className="h-28 relative flex items-end px-4 sm:px-6 pb-4 border-b border-slate-200/60"
           style={{ backgroundColor: beltConfig.bgHex }}
         >
-          <div className="absolute top-4 right-4 flex items-center gap-2">
+          <div className="absolute top-3.5 right-3.5 sm:top-4 sm:right-4 z-10 flex items-center gap-2">
             <button
+              type="button"
               onClick={onClose}
-              className="p-2 rounded-xl bg-black/20 hover:bg-black/30 text-white backdrop-blur-md transition-colors"
-              title="Đóng"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white hover:bg-rose-500 text-slate-700 hover:text-white border border-slate-300 shadow-md hover:shadow-lg flex items-center justify-center transition-all cursor-pointer active:scale-90"
+              title="Đóng cửa sổ"
+              aria-label="Đóng"
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5 stroke-[2.5]" />
             </button>
           </div>
 
@@ -221,36 +228,27 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
           </div>
         </div>
 
-        {/* Footer actions: icon Xóa và icon Sửa */}
-        <div className="p-3.5 sm:p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-3">
+        {/* Footer actions: icon Xóa và icon Sửa (Đã bỏ nút Đóng ở dưới vì đã có nút đóng X nổi bật ở trên) */}
+        <div className="p-3.5 sm:p-4 bg-slate-50 border-t border-slate-200/80 flex items-center justify-between gap-3">
           <button
             type="button"
             onClick={handleDelete}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/80 font-semibold text-xs transition-colors shadow-2xs active:scale-95 cursor-pointer"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs sm:text-sm transition-all shadow-2xs active:scale-95 cursor-pointer"
             title="Xóa hồ sơ võ sinh"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-4 h-4 text-rose-600" />
             <span>Xóa võ sinh</span>
           </button>
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-3.5 py-2 rounded-xl text-slate-500 hover:bg-slate-200/60 font-semibold text-xs transition-colors cursor-pointer"
-            >
-              Đóng
-            </button>
-            <button
-              type="button"
-              onClick={() => onEdit(student.id)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#0072de] hover:bg-blue-600 text-white font-bold text-xs shadow-sm transition-colors active:scale-95 cursor-pointer"
-              title="Chỉnh sửa thông tin"
-            >
-              <Edit3 className="w-4 h-4" />
-              <span>Sửa thông tin</span>
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => onEdit(student.id)}
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl bg-[#0072de] hover:bg-blue-600 text-white font-bold text-xs sm:text-sm shadow-xs transition-all active:scale-95 cursor-pointer"
+            title="Chỉnh sửa thông tin"
+          >
+            <Edit3 className="w-4 h-4" />
+            <span>Sửa thông tin</span>
+          </button>
         </div>
       </div>
     </div>
