@@ -140,7 +140,10 @@ export interface Student {
   joinDate: string; // Ngày nhập môn
   lastPromotionDate?: string; // Ngày thăng đai gần nhất
   avatar?: string;
-  avatarUrl?: string; // Ảnh thẻ
+  avatarUrl?: string; // Ảnh thẻ môn phái
+  federationAvatarUrl?: string; // Ảnh thẻ liên đoàn (nếu có)
+  height?: number | string; // Chiều cao (cm)
+  weight?: number | string; // Cân nặng (kg)
   status: StudentStatus;
   attendanceRate?: number; // Tỷ lệ chuyên cần (ví dụ: 95 = 95%)
   notes?: string;

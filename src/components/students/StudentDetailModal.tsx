@@ -1,15 +1,20 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
-import { getBeltBadgeStyle, getBeltConfig } from '../../utils/beltColors';
-import { formatDateVN, formatStudentClubCode, getResultBadge, getStudentStatusBadge } from '../../utils/formatters';
-import { X, Award, Calendar, Phone, MapPin, Building2, User, FileText, CheckCircle2, ChevronRight, Edit3, Trash2 } from 'lucide-react';
+import { getBeltConfig } from '../../utils/beltColors';
+import { formatStudentClubCode, getStudentStatusBadge } from '../../utils/formatters';
+import { X, User, Award, Edit3, Trash2 } from 'lucide-react';
 
 interface StudentDetailModalProps {
   studentId: string | null;
   onClose: () => void;
   onEdit: (studentId: string) => void;
-  onViewCertificate: (certId: string) => void;
+  onViewCertificate?: (certId: string) => void;
 }
+
+const toRoman = (num: number) => {
+  const romanMap = ['', 'I', 'II', 'III', 'IV', 'V'];
+  return romanMap[num] || String(num);
+};
 
 export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
   studentId,
@@ -17,7 +22,7 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
   onEdit,
   onViewCertificate
 }) => {
-  const { students, clubs, exams, examSheets, certificates, deleteStudent } = useApp();
+  const { students, clubs, certificates, deleteStudent } = useApp();
 
   if (!studentId) return null;
 
@@ -26,13 +31,11 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
 
   const club = clubs.find(c => c.id === student.clubId);
   const beltConfig = getBeltConfig(student.currentBelt);
-  const beltStyle = getBeltBadgeStyle(student.currentBelt);
   const statusBadge = getStudentStatusBadge(student.status);
 
-  // Lịch sử thi của võ sinh
-  const studentExamSheets = examSheets.filter(s => s.studentId === student.id);
   // Danh sách văn bằng đã nhận
   const studentCerts = certificates.filter(c => c.studentId === student.id);
+  const birthYear = student.birthYear || (student.dob ? student.dob.split('-')[0] : '---');
 
   const handleDelete = () => {
     if (window.confirm(`Bạn có chắc chắn muốn xóa hồ sơ võ sinh: ${student.fullName}?`)) {
@@ -43,211 +46,239 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 animate-in fade-in duration-150"
       onClick={e => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="relative bg-white rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden border border-slate-200">
-        {/* Banner with belt color */}
-        <div
-          className="h-28 relative flex items-end px-4 sm:px-6 pb-4 border-b border-slate-200/60"
-          style={{ backgroundColor: beltConfig.bgHex }}
-        >
-          <div className="absolute top-3.5 right-3.5 sm:top-4 sm:right-4 z-10 flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white hover:bg-rose-500 text-slate-700 hover:text-white border border-slate-300 shadow-md hover:shadow-lg flex items-center justify-center transition-all cursor-pointer active:scale-90"
-              title="Đóng cửa sổ"
-              aria-label="Đóng"
-            >
-              <X className="w-5 h-5 stroke-[2.5]" />
-            </button>
+      <div 
+        className="relative bg-white rounded-3xl max-w-lg sm:max-w-xl w-full shadow-2xl border border-slate-200 overflow-hidden my-auto animate-in zoom-in-95 duration-150"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header Bar màu xanh dương */}
+        <div className="bg-[#0072de] text-white px-4 py-3 sm:px-6 sm:py-3.5 flex items-center justify-between rounded-t-3xl relative select-none">
+          {/* Bên trái: Mã Võ sinh */}
+          <div className="text-xs sm:text-sm font-medium flex items-center gap-1.5 truncate max-w-[45%]">
+            <span className="opacity-80 shrink-0">Mã:</span>
+            <span className="font-mono font-bold underline decoration-blue-300 truncate">
+              {formatStudentClubCode(student, club)}
+            </span>
           </div>
 
-          <span
-            className="px-3 py-1 rounded-full text-xs font-black shadow-md uppercase tracking-wider bg-white/95"
-            style={{ color: beltConfig.borderHex }}
+          {/* Ở giữa: Tiêu đề Thông tin */}
+          <h3 className="text-base sm:text-lg font-bold tracking-wide text-center">
+            Thông tin
+          </h3>
+
+          {/* Bên phải: Nút đóng X nổi bật */}
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/95 hover:bg-white text-slate-700 hover:text-rose-600 shadow-md border border-white/60 flex items-center justify-center transition-all cursor-pointer active:scale-90 shrink-0"
+            title="Đóng cửa sổ"
+            aria-label="Đóng"
           >
-            {beltConfig.name} - Cấp {student.currentBeltLevel}
-          </span>
+            <X className="w-4 h-4 sm:w-4.5 sm:h-4.5 stroke-[2.5]" />
+          </button>
         </div>
 
-        {/* Content Body */}
-        <div className="p-4 sm:p-6 space-y-5 sm:space-y-6 max-h-[75vh] overflow-y-auto">
-          {/* Main Info */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
-            <div>
-              <div className="flex items-center gap-2.5">
-                <h2 className="text-xl font-black text-slate-900">{student.fullName}</h2>
-                <span className={`text-[10px] px-2.5 py-0.5 rounded-full border font-bold ${statusBadge.className}`}>
-                  {statusBadge.label}
-                </span>
+        {/* Nội dung chính của pop-up */}
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-5">
+          {/* Khối Trên: Hình Môn Phái | Họ Tên, Năm sinh, Giới tính | Hình Liên Đoàn */}
+          <div className="flex items-center justify-between gap-2.5 sm:gap-5">
+            {/* 1. Hình Môn Phái */}
+            <div className="flex flex-col items-center shrink-0">
+              <div 
+                className="w-16 h-22 sm:w-22 sm:h-30 rounded-xl border-2 bg-slate-50 overflow-hidden flex items-center justify-center shadow-2xs relative"
+                style={{ borderColor: beltConfig.borderHex }}
+              >
+                {student.avatarUrl ? (
+                  <img src={student.avatarUrl} alt={student.fullName} className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-7 h-7 sm:w-9 sm:h-9 text-slate-300" />
+                )}
               </div>
+              <span className="text-[10px] sm:text-xs font-semibold text-slate-600 mt-1">
+                Hình Môn Phái
+              </span>
+            </div>
+
+            {/* 2. Thông tin ở giữa: Họ Tên, Năm sinh, Giới tính */}
+            <div className="flex-1 text-center min-w-0 px-1">
+              <h2 className="text-base sm:text-xl font-black text-slate-900 tracking-tight leading-snug">
+                {student.fullName}
+              </h2>
               {student.dharmaName && (
-                <div className="text-sm font-semibold text-amber-700 mt-0.5">
+                <div className="text-[11px] sm:text-xs font-bold text-amber-700 mt-0.5">
                   Pháp danh: {student.dharmaName}
                 </div>
               )}
-              <div className="text-xs font-mono text-slate-400 mt-1">
-                Mã: <span className="font-bold text-[#0072de]">{formatStudentClubCode(student, club)}</span> ({student.code}) &bull; {student.gender} &bull; Sinh ngày: {formatDateVN(student.dob)}
+              <div className="flex items-center justify-center gap-2 sm:gap-4 mt-1.5 text-xs sm:text-sm font-semibold text-slate-700 flex-wrap">
+                <span>Năm sinh: <strong className="font-mono text-slate-900">{birthYear}</strong></span>
+                <span className="text-slate-300 hidden sm:inline">&bull;</span>
+                <span>Giới tính: <strong className="text-slate-900">{student.gender}</strong></span>
               </div>
-            </div>
-
-            <div className="flex flex-col items-start sm:items-end text-xs text-slate-500">
-              <span className="font-bold text-slate-800">{club?.name || 'Chưa gán CLB'}</span>
-              <span>Nhập môn: {formatDateVN(student.joinDate)}</span>
-              {student.lastPromotionDate && (
-                <span className="text-amber-700 font-medium">Thăng đai: {formatDateVN(student.lastPromotionDate)}</span>
+              {student.status && (
+                <div className="flex justify-center mt-1.5">
+                  <span className={`text-[10px] px-2.5 py-0.5 rounded-full border font-bold ${statusBadge.className}`}>
+                    {statusBadge.label}
+                  </span>
+                </div>
               )}
             </div>
-          </div>
 
-          {/* Contact & Address */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-slate-50 p-4 rounded-2xl border border-slate-200">
-            <div className="flex items-center gap-2 text-slate-700">
-              <Phone className="w-4 h-4 text-amber-600 shrink-0" />
-              <span>SĐT: <strong>{student.phone || 'Chưa cập nhật'}</strong></span>
+            {/* 3. Hình Liên Đoàn */}
+            <div className="flex flex-col items-center shrink-0">
+              <div className="w-16 h-22 sm:w-22 sm:h-30 rounded-xl border-2 border-slate-300/90 bg-slate-50 overflow-hidden flex items-center justify-center shadow-2xs">
+                {student.federationAvatarUrl ? (
+                  <img src={student.federationAvatarUrl} alt="Hình Liên Đoàn" className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-7 h-7 sm:w-9 sm:h-9 text-slate-300" />
+                )}
+              </div>
+              <span className="text-[10px] sm:text-xs font-semibold text-slate-600 mt-1">
+                Hình Liên Đoàn
+              </span>
             </div>
-            <div className="flex items-center gap-2 text-slate-700">
-              <Building2 className="w-4 h-4 text-amber-600 shrink-0" />
-              <span>CLB: <strong>{club?.name}</strong></span>
+          </div>
+
+          {/* Khối Giữa: 2 cột ngăn cách bởi vạch dọc xanh theo đúng mockup */}
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-6 pt-1">
+            {/* Cột Trái */}
+            <div className="space-y-2 text-xs sm:text-sm text-slate-700 min-w-0">
+              <div className="flex items-start gap-1">
+                <span className="text-slate-400 shrink-0 font-bold">-</span>
+                <div className="min-w-0">
+                  <span className="font-medium text-slate-600">Địa chỉ: </span>
+                  <strong className="text-slate-900 font-semibold break-words">
+                    {student.address || 'Chưa cập nhật'}
+                  </strong>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1">
+                <span className="text-slate-400 shrink-0 font-bold">-</span>
+                <div>
+                  <span className="font-medium text-slate-600">SĐT: </span>
+                  <strong className="text-slate-900 font-mono font-semibold">
+                    {student.phone || 'Chưa cập nhật'}
+                  </strong>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1 flex-wrap">
+                <span className="text-slate-400 shrink-0 font-bold">-</span>
+                <div>
+                  <span className="font-medium text-slate-600">Cao: </span>
+                  <strong className="font-mono text-slate-800">
+                    {student.height ? `${student.height} cm` : '....... cm'}
+                  </strong>
+                  <span className="mx-1 text-slate-300">|</span>
+                  <span className="font-medium text-slate-600">Nặng: </span>
+                  <strong className="font-mono text-slate-800">
+                    {student.weight ? `${student.weight} Kg` : '....... Kg'}
+                  </strong>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-1">
+                <span className="text-slate-400 shrink-0 font-bold">-</span>
+                <div>
+                  <span className="font-medium text-slate-600">Trình độ văn hóa: </span>
+                  <strong className="text-slate-900 font-semibold">
+                    {student.educationLevel || '.../12'}
+                  </strong>
+                </div>
+              </div>
             </div>
-            <div className="sm:col-span-2 flex items-start gap-2 text-slate-700">
-              <MapPin className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-              <span>Địa chỉ: {student.address || 'Chưa có thông tin'}</span>
+
+            {/* Cột Phải (Có vạch kẻ dọc màu xanh #0072de) */}
+            <div className="border-l-2 border-[#0072de] pl-2.5 sm:pl-6 space-y-2 text-xs sm:text-sm text-slate-700 min-w-0">
+              <div className="flex items-center gap-1">
+                <span className="text-slate-400 shrink-0 font-bold">-</span>
+                <div>
+                  <span className="font-medium text-slate-600">Cấp: </span>
+                  <strong className="text-[#0072de] font-mono font-bold">
+                    {String(student.currentBeltLevel).padStart(2, '0')}
+                  </strong>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1">
+                <span className="text-slate-400 shrink-0 font-bold">-</span>
+                <div>
+                  <span className="font-medium text-slate-600">Đai đẳng: </span>
+                  <strong className="font-bold" style={{ color: beltConfig.borderHex }}>
+                    {beltConfig.name} {toRoman(student.currentBeltLevel)}
+                  </strong>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-1">
+                <span className="text-slate-400 shrink-0 font-bold">-</span>
+                <div className="min-w-0">
+                  <span className="font-medium text-slate-600">CLB: </span>
+                  <strong className="text-slate-900 font-semibold break-words">
+                    {club?.name || student.unitName || 'CLB Phước Quang 1'}
+                  </strong>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-1">
+                <span className="text-slate-400 shrink-0 font-bold">-</span>
+                <div className="min-w-0">
+                  <span className="font-medium text-slate-600">HLV: </span>
+                  <strong className="text-slate-900 font-semibold break-words">
+                    {student.coachName || club?.coach || 'Chưa cập nhật'}
+                  </strong>
+                </div>
+              </div>
             </div>
-            {student.notes && (
-              <div className="sm:col-span-2 pt-2 border-t border-slate-200/60 text-slate-600 italic">
-                &ldquo;{student.notes}&rdquo;
-              </div>
-            )}
           </div>
 
-          {/* Lịch sử thi thăng đai */}
-          <div>
-            <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
-              <FileText className="w-4 h-4 text-amber-600" />
-              <span>Lịch Sử Tham Gia Kỳ Thi Thăng Đai ({studentExamSheets.length})</span>
-            </h4>
-
-            {studentExamSheets.length === 0 ? (
-              <div className="p-4 text-center text-xs text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                Chưa có dữ liệu dự thi.
-              </div>
-            ) : (
-              <div className="space-y-2.5">
-                {studentExamSheets.map(sheet => {
-                  const exam = exams.find(e => e.id === sheet.examId);
-                  const targetBeltCfg = getBeltConfig(sheet.targetBelt);
-                  const resultBadge = getResultBadge(sheet.result);
-
-                  return (
-                    <div
-                      key={sheet.id}
-                      className="p-3.5 rounded-2xl border border-slate-200 bg-white hover:border-slate-300 text-xs space-y-2"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-slate-900">{exam?.name || 'Kỳ thi'}</span>
-                        <span className={`px-2 py-0.5 rounded-full border text-[10px] font-bold ${resultBadge.className}`}>
-                          {resultBadge.label}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-between text-slate-500 text-[11px]">
-                        <span>
-                          Thi lên: <strong style={{ color: targetBeltCfg.borderHex }}>{targetBeltCfg.name} Cấp {sheet.targetBeltLevel}</strong>
-                        </span>
-                        <span>Điểm TB: <strong className="text-slate-900 text-xs">{sheet.averageScore}/10</strong></span>
-                      </div>
-
-                      {/* Breakdown scores */}
-                      <div className="grid grid-cols-6 gap-1 pt-2 border-t border-slate-100 text-center text-[10px]">
-                        <div className="bg-slate-50 p-1 rounded">Căn bản: <strong>{sheet.scoreCanBan}</strong></div>
-                        <div className="bg-slate-50 p-1 rounded">Quyền: <strong>{sheet.scoreBaiQuyen}</strong></div>
-                        <div className="bg-slate-50 p-1 rounded">Binh khí: <strong>{sheet.scoreBinhKhi}</strong></div>
-                        <div className="bg-slate-50 p-1 rounded">Thể lực: <strong>{sheet.scoreTheLuc}</strong></div>
-                        <div className="bg-slate-50 p-1 rounded">Đối kháng: <strong>{sheet.scoreDoiKhang}</strong></div>
-                        <div className="bg-slate-50 p-1 rounded">Võ đạo: <strong>{sheet.scoreLyThuyet}</strong></div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Danh sách Văn bằng được cấp */}
-          <div>
-            <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
-              <Award className="w-4 h-4 text-purple-600" />
-              <span>Văn Bằng Đã Được Cấp ({studentCerts.length})</span>
-            </h4>
-
-            {studentCerts.length === 0 ? (
-              <div className="p-4 text-center text-xs text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                Chưa có văn bằng nào được cấp.
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {studentCerts.map(cert => {
-                  const cBelt = getBeltConfig(cert.beltConferred);
-                  return (
-                    <div
-                      key={cert.id}
-                      className="p-3 rounded-2xl border border-purple-200 bg-purple-50/50 flex items-center justify-between text-xs"
-                    >
-                      <div>
-                        <div className="font-bold text-slate-900 flex items-center gap-2">
-                          <span>{cBelt.name} Cấp {cert.beltLevel}</span>
-                          <span className="font-mono text-purple-700 text-[11px] font-semibold">
-                            {cert.certNumber}
-                          </span>
-                        </div>
-                        <div className="text-[11px] text-slate-500 mt-0.5">
-                          Ngày cấp: {formatDateVN(cert.issueDate)} &bull; {cert.signerTitle}
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => {
-                          onClose();
-                          onViewCertificate(cert.id);
-                        }}
-                        className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs flex items-center gap-1 shadow-xs transition-colors"
-                      >
-                        <span>Xem Bằng</span>
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          {/* Dòng xem văn bằng nếu có */}
+          {studentCerts.length > 0 && (
+            <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-purple-700">
+              <span className="font-semibold flex items-center gap-1">
+                <Award className="w-3.5 h-3.5" />
+                <span>Văn bằng đã cấp: {studentCerts.length}</span>
+              </span>
+              {onViewCertificate && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onViewCertificate(studentCerts[0].id);
+                  }}
+                  className="text-[11px] font-bold text-purple-700 hover:text-purple-900 hover:underline cursor-pointer"
+                >
+                  Xem bằng &rarr;
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Footer actions: icon Xóa và icon Sửa (Đã bỏ nút Đóng ở dưới vì đã có nút đóng X nổi bật ở trên) */}
-        <div className="p-3.5 sm:p-4 bg-slate-50 border-t border-slate-200/80 flex items-center justify-between gap-3">
+        {/* Khối Dưới (Footer): Nút Xóa (Đỏ) và Sửa (Xanh) ở góc phải theo đúng mockup */}
+        <div className="px-5 py-3 sm:px-6 sm:py-3.5 bg-slate-50/80 border-t border-slate-100 flex items-center justify-end gap-3 rounded-b-3xl">
           <button
             type="button"
             onClick={handleDelete}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs sm:text-sm transition-all shadow-2xs active:scale-95 cursor-pointer"
+            className="flex items-center justify-center gap-1.5 px-5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs sm:text-sm shadow-xs transition-all active:scale-95 cursor-pointer"
             title="Xóa hồ sơ võ sinh"
           >
-            <Trash2 className="w-4 h-4 text-rose-600" />
-            <span>Xóa võ sinh</span>
+            <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span>Xóa</span>
           </button>
 
           <button
             type="button"
             onClick={() => onEdit(student.id)}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl bg-[#0072de] hover:bg-blue-600 text-white font-bold text-xs sm:text-sm shadow-xs transition-all active:scale-95 cursor-pointer"
+            className="flex items-center justify-center gap-1.5 px-6 py-2 rounded-xl bg-[#0072de] hover:bg-blue-600 text-white font-bold text-xs sm:text-sm shadow-xs transition-all active:scale-95 cursor-pointer"
             title="Chỉnh sửa thông tin"
           >
-            <Edit3 className="w-4 h-4" />
-            <span>Sửa thông tin</span>
+            <Edit3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span>Sửa</span>
           </button>
         </div>
       </div>
