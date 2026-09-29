@@ -8,7 +8,8 @@ const STORAGE_KEYS = {
   CERTIFICATES: 'pqq_certificates_v2',
   ATTENDANCE: 'pqq_attendance_v2',
   VIDEOS: 'pqq_videos_v2',
-  SETTINGS: 'pqq_settings_v2'
+  SETTINGS: 'pqq_settings_v2',
+  PERMANENT_SHEET: 'pqq_permanent_sheet_config'
 };
 
 // 5 Câu Lạc Bộ Chuẩn của Môn Phái Phật Quang Quyền theo yêu cầu
@@ -778,8 +779,8 @@ export const INITIAL_CERTIFICATES: Certificate[] = [
 ];
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  googleSheetScriptUrl: '',
-  googleSheetUrl: 'https://docs.google.com/spreadsheets/d/1GzC6WywESgThVzUQCfAcsbDsvYoeHjvIPpM6QUlO42s/edit?usp=sharing',
+  googleSheetScriptUrl: 'https://script.google.com/macros/s/AKfycbw2CzxiCdDqsLKlaXIEcFHbN7sWvjc2VS5Oi0Ia6CsbHdTLdnro_HgkMuFAEFFNKBZ-Ng/exec',
+  googleSheetUrl: 'https://docs.google.com/spreadsheets/d/1GzC6WywESgThVzUQCfAcsbDsvYoeHjvIPpM6QUlO42s/edit?gid=1552337193#gid=1552337193',
   googleSheetId: '1GzC6WywESgThVzUQCfAcsbDsvYoeHjvIPpM6QUlO42s',
   secretToken: 'PQQ_SECRET_2026',
   lastSyncedAt: undefined,
@@ -911,20 +912,51 @@ export const storageService = {
   },
 
   loadSettings(): AppSettings {
+    let permanentConfig: Partial<AppSettings> = {};
+    try {
+      const perm = localStorage.getItem(STORAGE_KEYS.PERMANENT_SHEET);
+      if (perm) permanentConfig = JSON.parse(perm);
+    } catch {
+      // ignore
+    }
+
     const raw = localStorage.getItem(STORAGE_KEYS.SETTINGS);
     if (!raw) {
-      localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(DEFAULT_SETTINGS));
-      return DEFAULT_SETTINGS;
+      const merged = { ...DEFAULT_SETTINGS, ...permanentConfig };
+      localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(merged));
+      return merged;
     }
     try {
-      return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+      const parsed = JSON.parse(raw);
+      return {
+        ...DEFAULT_SETTINGS,
+        ...parsed,
+        googleSheetScriptUrl: parsed.googleSheetScriptUrl || DEFAULT_SETTINGS.googleSheetScriptUrl,
+        googleSheetUrl: parsed.googleSheetUrl || DEFAULT_SETTINGS.googleSheetUrl,
+        googleSheetId: parsed.googleSheetId || DEFAULT_SETTINGS.googleSheetId,
+        secretToken: parsed.secretToken || DEFAULT_SETTINGS.secretToken,
+        ...permanentConfig
+      };
     } catch {
-      return DEFAULT_SETTINGS;
+      return { ...DEFAULT_SETTINGS, ...permanentConfig };
     }
   },
 
   saveSettings(settings: AppSettings) {
     localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+    // Tự động sao lưu vĩnh viễn cấu hình liên kết Sheet
+    if (settings.googleSheetScriptUrl || settings.googleSheetUrl) {
+      try {
+        localStorage.setItem(STORAGE_KEYS.PERMANENT_SHEET, JSON.stringify({
+          googleSheetScriptUrl: settings.googleSheetScriptUrl,
+          googleSheetUrl: settings.googleSheetUrl,
+          googleSheetId: settings.googleSheetId,
+          secretToken: settings.secretToken
+        }));
+      } catch {
+        // ignore
+      }
+    }
   },
 
   exportAllData(): string {
@@ -969,7 +1001,16 @@ export const storageService = {
     this.saveCertificates(INITIAL_CERTIFICATES);
     this.saveAttendance(INITIAL_ATTENDANCE);
     this.saveVideoSubmissions(INITIAL_VIDEOS);
-    this.saveSettings(DEFAULT_SETTINGS);
+    
+    // Bảo vệ liên kết Google Sheet khi đặt lại dữ liệu mẫu, không làm mất link người dùng đã cấu hình
+    const current = this.loadSettings();
+    this.saveSettings({
+      ...DEFAULT_SETTINGS,
+      googleSheetScriptUrl: current.googleSheetScriptUrl || DEFAULT_SETTINGS.googleSheetScriptUrl,
+      googleSheetUrl: current.googleSheetUrl || DEFAULT_SETTINGS.googleSheetUrl,
+      googleSheetId: current.googleSheetId || DEFAULT_SETTINGS.googleSheetId,
+      secretToken: current.secretToken || DEFAULT_SETTINGS.secretToken
+    });
   }
 };
 
