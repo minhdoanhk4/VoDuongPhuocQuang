@@ -146,10 +146,18 @@ export const ClubWorkspaceView: React.FC<ClubWorkspaceViewProps> = ({
     });
   }, [clubStudents, query]);
 
+  // Selected students for single or batch deletion
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+
   // Reset trang về 1 khi đổi từ khóa tìm kiếm hoặc đổi CLB
   React.useEffect(() => {
     setCurrentPage(1);
+    setSelectedStudentIds([]);
   }, [query, currentClub?.id]);
+
+  React.useEffect(() => {
+    setSelectedStudentIds([]);
+  }, [activeTab, currentPage]);
 
   const totalPages = Math.max(1, Math.ceil(filteredStudents.length / pageSize));
   const safePage = Math.min(currentPage, totalPages);
@@ -216,6 +224,41 @@ export const ClubWorkspaceView: React.FC<ClubWorkspaceViewProps> = ({
   const handleDelete = (s: Student) => {
     if (window.confirm(`Xóa võ sinh: ${s.fullName} (${s.code}) khỏi câu lạc bộ?`)) {
       deleteStudent(s.id);
+    }
+  };
+
+  const handleToggleSelectStudent = (id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setSelectedStudentIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAllPage = () => {
+    const pageIds = paginatedStudents.map(s => s.id);
+    const allSelected = pageIds.length > 0 && pageIds.every(id => selectedStudentIds.includes(id));
+    if (allSelected) {
+      setSelectedStudentIds(prev => prev.filter(id => !pageIds.includes(id)));
+    } else {
+      setSelectedStudentIds(prev => Array.from(new Set([...prev, ...pageIds])));
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedStudentIds([]);
+  };
+
+  const handleBatchDelete = () => {
+    if (selectedStudentIds.length === 0) return;
+    const count = selectedStudentIds.length;
+    if (
+      window.confirm(
+        `Bạn có chắc chắn muốn xóa ${count} võ sinh đã chọn khỏi câu lạc bộ? Hành động này không thể hoàn tác.`
+      )
+    ) {
+      selectedStudentIds.forEach(id => deleteStudent(id));
+      setSelectedStudentIds([]);
+      addToast(`Đã xóa ${count} võ sinh khỏi CLB`, 'success', 'Xóa thành công');
     }
   };
 
@@ -825,96 +868,159 @@ export const ClubWorkspaceView: React.FC<ClubWorkspaceViewProps> = ({
 
             {/* 2. DANH SÁCH THẺ VÕ SINH DI ĐỘNG TIẾT KIỆM KHÔNG GIAN (HIỂN THỊ ĐƯỢC NHIỀU HƠN) */}
             <div className="md:hidden space-y-2">
-                {paginatedStudents.length === 0 ? (
-                  <div className="py-8 text-center text-slate-400 text-xs bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                    Không tìm thấy võ sinh nào phù hợp.
+              {/* Thanh chọn & xóa theo chỉ định hoặc hàng loạt trên Mobile */}
+              {paginatedStudents.length > 0 && (
+                <div className="flex items-center justify-between px-1 text-xs text-slate-600">
+                  <label className="flex items-center gap-2 cursor-pointer font-medium select-none">
+                    <input
+                      type="checkbox"
+                      checked={paginatedStudents.length > 0 && paginatedStudents.every(s => selectedStudentIds.includes(s.id))}
+                      onChange={handleSelectAllPage}
+                      className="w-4 h-4 rounded text-[#0072de] border-slate-300 focus:ring-[#0072de] cursor-pointer"
+                    />
+                    <span>Chọn tất cả trang này ({paginatedStudents.length})</span>
+                  </label>
+                  {selectedStudentIds.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleClearSelection}
+                      className="text-xs text-slate-500 hover:text-slate-700 underline cursor-pointer"
+                    >
+                      Bỏ chọn
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Thanh thông báo và nút Xóa hàng loạt / chỉ định khi có võ sinh được tích chọn */}
+              {selectedStudentIds.length > 0 && (
+                <div className="bg-rose-50 border border-rose-200 rounded-2xl p-2.5 px-3 flex items-center justify-between gap-2 text-xs text-rose-900 shadow-xs">
+                  <div className="flex items-center gap-2 font-bold">
+                    <span className="w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center text-[11px] shrink-0">
+                      {selectedStudentIds.length}
+                    </span>
+                    <span>Đã chọn {selectedStudentIds.length} võ sinh</span>
                   </div>
-                ) : (
-                  paginatedStudents.map((student, idx) => {
-                    const stt = (safePage - 1) * pageSize + idx + 1;
-                    const beltCfg = getBeltConfig(student.currentBelt);
-                    const studentCode = formatStudentClubCode(student, currentClub);
-                    const attendanceRate = calculateStudentAttendanceRate(student.id, attendance);
-                    const birthYear = student.birthYear || (student.dob ? student.dob.split('-')[0] : '---');
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={handleClearSelection}
+                      className="px-2.5 py-1.5 rounded-xl bg-white border border-rose-200 text-slate-600 hover:bg-slate-50 font-medium active:scale-95 transition-all cursor-pointer"
+                    >
+                      Hủy
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleBatchDelete}
+                      className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold flex items-center gap-1.5 shadow-xs active:scale-95 transition-all cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Xóa {selectedStudentIds.length > 1 ? 'hàng loạt' : ''} ({selectedStudentIds.length})</span>
+                    </button>
+                  </div>
+                </div>
+              )}
 
-                    return (
-                      <div
-                        key={student.id}
-                        onClick={() => onViewStudentDetail(student.id)}
-                        className="bg-white rounded-2xl p-2.5 px-3 border border-slate-200/90 shadow-2xs hover:border-slate-300 active:scale-[0.99] active:bg-slate-50/80 transition-all flex items-center justify-between gap-2.5 cursor-pointer select-none"
-                      >
-                        {/* Khối Trái: STT + Avatar viền đai + Tên + Mã + Đai */}
-                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                          {/* STT */}
-                          <span className="w-5 text-center text-xs font-bold text-slate-400 shrink-0 font-mono">
-                            {stt}
-                          </span>
+              {paginatedStudents.length === 0 ? (
+                <div className="py-8 text-center text-slate-400 text-xs bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                  Không tìm thấy võ sinh nào phù hợp.
+                </div>
+              ) : (
+                paginatedStudents.map((student, idx) => {
+                  const stt = (safePage - 1) * pageSize + idx + 1;
+                  const beltCfg = getBeltConfig(student.currentBelt);
+                  const studentCode = formatStudentClubCode(student, currentClub);
+                  const birthYear = student.birthYear || (student.dob ? student.dob.split('-')[0] : '---');
+                  const isSelected = selectedStudentIds.includes(student.id);
 
-                          {/* Avatar 36px tròn viền màu đai và chấm trạng thái */}
-                          <div className="relative shrink-0">
-                            <div
-                              className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden border-2"
-                              style={{ borderColor: beltCfg.borderHex }}
-                            >
-                              {student.avatarUrl ? (
-                                <img src={student.avatarUrl} alt={student.fullName} className="w-full h-full object-cover" />
-                              ) : (
-                                <User className="w-4 h-4 text-slate-400" />
-                              )}
-                            </div>
-                            <span
-                              className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${
-                                student.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-slate-400'
-                              }`}
-                              title={student.status === 'ACTIVE' ? 'Đang học' : 'Nghỉ tập'}
-                            />
-                          </div>
-
-                          {/* Thông tin chính: 2 dòng gọn gàng, hiển thị đầy đủ thông tin thiết yếu */}
-                          <div className="min-w-0 flex-1">
-                            {/* Dòng 1: Họ tên */}
-                            <div className="font-bold text-slate-900 text-sm truncate leading-snug">
-                              {student.fullName}
-                            </div>
-
-                            {/* Dòng 2: Mã võ sinh • Giới tính • Năm sinh (Không hiện cấp đai & chuyên cần để tiết kiệm không gian) */}
-                            <div className="flex items-center gap-1.5 text-[11px] text-slate-500 leading-tight mt-0.5 truncate">
-                              <span className="font-mono font-bold text-[#0072de]">{studentCode}</span>
-                              <span className="text-slate-300">&bull;</span>
-                              <span>{student.gender || 'Nam'}</span>
-                              <span className="text-slate-300">&bull;</span>
-                              <span>{birthYear}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Khối Phải: 2 nút thao tác nhanh (Sửa, Xóa) */}
+                  return (
+                    <div
+                      key={student.id}
+                      onClick={() => onViewStudentDetail(student.id)}
+                      className={`bg-white rounded-2xl p-2.5 px-3 border transition-all flex items-center justify-between gap-2 cursor-pointer select-none ${
+                        isSelected
+                          ? 'border-[#0072de] bg-blue-50/20 shadow-xs ring-1 ring-blue-300'
+                          : 'border-slate-200/90 shadow-2xs hover:border-slate-300 active:scale-[0.99] active:bg-slate-50/80'
+                      }`}
+                    >
+                      {/* Khối Trái: Checkbox + STT + Avatar viền đai + Tên + Mã */}
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        {/* Checkbox chọn */}
                         <div
-                          className="flex items-center gap-0.5 shrink-0"
+                          className="shrink-0 flex items-center justify-center p-0.5"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <button
-                            type="button"
-                            onClick={() => onOpenEditStudent(student)}
-                            className="p-1.5 rounded-xl text-slate-400 hover:text-[#0072de] hover:bg-blue-50 active:scale-90 transition-all cursor-pointer"
-                            title="Sửa hồ sơ võ sinh"
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => handleToggleSelectStudent(student.id, e as any)}
+                            className="w-4 h-4 rounded text-[#0072de] border-slate-300 focus:ring-[#0072de] cursor-pointer"
+                            title="Chọn để xóa"
+                          />
+                        </div>
+
+                        {/* STT */}
+                        <span className="w-4 text-center text-xs font-bold text-slate-400 shrink-0 font-mono">
+                          {stt}
+                        </span>
+
+                        {/* Avatar 36px tròn viền màu đai và chấm trạng thái */}
+                        <div className="relative shrink-0">
+                          <div
+                            className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden border-2"
+                            style={{ borderColor: beltCfg.borderHex }}
                           >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(student)}
-                            className="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 active:scale-90 transition-all cursor-pointer"
-                            title="Xóa võ sinh"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                            {student.avatarUrl ? (
+                              <img src={student.avatarUrl} alt={student.fullName} className="w-full h-full object-cover" />
+                            ) : (
+                              <User className="w-4 h-4 text-slate-400" />
+                            )}
+                          </div>
+                          <span
+                            className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${
+                              student.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-slate-400'
+                            }`}
+                            title={student.status === 'ACTIVE' ? 'Đang học' : 'Nghỉ tập'}
+                          />
+                        </div>
+
+                        {/* Thông tin chính: 2 dòng gọn gàng, hiển thị đầy đủ thông tin thiết yếu */}
+                        <div className="min-w-0 flex-1">
+                          {/* Dòng 1: Họ tên */}
+                          <div className="font-bold text-slate-900 text-sm truncate leading-snug">
+                            {student.fullName}
+                          </div>
+
+                          {/* Dòng 2: Mã võ sinh • Giới tính • Năm sinh */}
+                          <div className="flex items-center gap-1.5 text-[11px] text-slate-500 leading-tight mt-0.5 truncate">
+                            <span className="font-mono font-bold text-[#0072de]">{studentCode}</span>
+                            <span className="text-slate-300">&bull;</span>
+                            <span>{student.gender || 'Nam'}</span>
+                            <span className="text-slate-300">&bull;</span>
+                            <span>{birthYear}</span>
+                          </div>
                         </div>
                       </div>
-                    );
-                  })
-                )}
-              </div>
+
+                      {/* Khối Phải: Icon Mắt xem chi tiết (thay cho nút sửa/xóa cũ để tránh bấm nhầm) */}
+                      <div
+                        className="shrink-0"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => onViewStudentDetail(student.id)}
+                          className="p-2 rounded-xl text-[#0072de] bg-blue-50/80 hover:bg-blue-100 active:scale-90 transition-all cursor-pointer border border-blue-100"
+                          title="Xem thông tin chi tiết võ sinh"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
 
             {/* Phân trang danh sách sao cho hiện 10 võ sinh trên 1 trang */}
             {filteredStudents.length > 0 && (

@@ -51,22 +51,9 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
         >
           <div className="absolute top-4 right-4 flex items-center gap-2">
             <button
-              onClick={() => onEdit(student.id)}
-              className="p-2 rounded-xl bg-white/20 hover:bg-white/30 text-white backdrop-blur-md transition-colors"
-              title="Chỉnh sửa hồ sơ"
-            >
-              <Edit3 className="w-4 h-4" />
-            </button>
-            <button
-              onClick={handleDelete}
-              className="p-2 rounded-xl bg-rose-500/80 hover:bg-rose-600 text-white backdrop-blur-md transition-colors"
-              title="Xóa hồ sơ"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-            <button
               onClick={onClose}
               className="p-2 rounded-xl bg-black/20 hover:bg-black/30 text-white backdrop-blur-md transition-colors"
+              title="Đóng"
             >
               <X className="w-4 h-4" />
             </button>
@@ -231,6 +218,38 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                 })}
               </div>
             )}
+          </div>
+        </div>
+
+        {/* Footer actions: icon Xóa và icon Sửa */}
+        <div className="p-3.5 sm:p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={handleDelete}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/80 font-semibold text-xs transition-colors shadow-2xs active:scale-95 cursor-pointer"
+            title="Xóa hồ sơ võ sinh"
+          >
+            <Trash2 className="w-4 h-4" />
+            <span>Xóa võ sinh</span>
+          </button>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-3.5 py-2 rounded-xl text-slate-500 hover:bg-slate-200/60 font-semibold text-xs transition-colors cursor-pointer"
+            >
+              Đóng
+            </button>
+            <button
+              type="button"
+              onClick={() => onEdit(student.id)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#0072de] hover:bg-blue-600 text-white font-bold text-xs shadow-sm transition-colors active:scale-95 cursor-pointer"
+              title="Chỉnh sửa thông tin"
+            >
+              <Edit3 className="w-4 h-4" />
+              <span>Sửa thông tin</span>
+            </button>
           </div>
         </div>
       </div>

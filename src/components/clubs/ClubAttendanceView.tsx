@@ -19,7 +19,13 @@ import {
   TrendingUp,
   AlertCircle,
   CheckCircle2,
-  Edit
+  Edit,
+  Trophy,
+  Award,
+  Sparkles,
+  ChevronRight,
+  GraduationCap,
+  Calendar
 } from 'lucide-react';
 
 interface ClubAttendanceViewProps {
@@ -81,7 +87,7 @@ export const ClubAttendanceView: React.FC<ClubAttendanceViewProps> = ({
   onSubPageChange,
   onViewStudentDetail
 }) => {
-  const { clubs, students, attendance, saveAttendanceBatch, updateClub, addToast, syncToGoogleSheet, settings } = useApp();
+  const { clubs, students, certificates, attendance, saveAttendanceBatch, updateClub, addToast, syncToGoogleSheet, settings } = useApp();
 
   const currentClub = clubs.find(c => c.id === clubId) || clubs[0];
 
@@ -260,6 +266,11 @@ export const ClubAttendanceView: React.FC<ClubAttendanceViewProps> = ({
   const [reportTimeframe, setReportTimeframe] = useState<'month' | 'year'>('month');
   const [reportMonth, setReportMonth] = useState<string>(currentMonthStr);
   const [reportYear, setReportYear] = useState<number>(currentYear);
+
+  // Tab chuyển đổi nội dung báo cáo: 'top5' (Chuyên cần & Top 5 khen thưởng) | 'exam_eligibility' (Đủ điều kiện thi thăng đai)
+  const [reportTab, setReportTab] = useState<'top5' | 'exam_eligibility'>('top5');
+  // Bộ lọc danh sách đủ điều kiện thi thăng đai
+  const [examFilter, setExamFilter] = useState<'ALL' | 'ELIGIBLE' | 'INELIGIBLE'>('ALL');
 
   // Modal chỉnh sửa cấu hình lịch tập của CLB
   const [isScheduleSettingsOpen, setIsScheduleSettingsOpen] = useState<boolean>(false);
@@ -476,14 +487,192 @@ ${absentListStr}
       };
     });
 
+    // 1. TOP 5 CHUYÊN CẦN (HẠNG NHẤT, NHÌ, BA VÀ 2 RUNNER ĐỂ KHEN THƯỞNG CUỐI THÁNG / CUỐI NĂM)
+    const sortedForTop5 = [...studentStats].sort((a, b) => {
+      if (b.rate !== a.rate) return b.rate - a.rate;
+      if (b.present !== a.present) return b.present - a.present;
+      return a.student.fullName.localeCompare(b.student.fullName);
+    });
+
+    const top5Attendance = sortedForTop5.slice(0, 5).map((item, idx) => {
+      let rankTitle = '';
+      let rankBadge = '';
+      let medalIcon = '';
+      let cardBg = '';
+      let borderColor = '';
+      if (idx === 0) {
+        rankTitle = 'Hạng Nhất';
+        rankBadge = 'bg-amber-500 text-white shadow-amber-500/20';
+        medalIcon = '🥇';
+        cardBg = 'bg-gradient-to-br from-amber-500/10 via-amber-100/30 to-amber-500/5';
+        borderColor = 'border-amber-300';
+      } else if (idx === 1) {
+        rankTitle = 'Hạng Nhì';
+        rankBadge = 'bg-slate-500 text-white shadow-slate-500/20';
+        medalIcon = '🥈';
+        cardBg = 'bg-gradient-to-br from-slate-200/50 via-slate-100/40 to-slate-200/20';
+        borderColor = 'border-slate-300';
+      } else if (idx === 2) {
+        rankTitle = 'Hạng Ba';
+        rankBadge = 'bg-amber-700 text-white shadow-amber-700/20';
+        medalIcon = '🥉';
+        cardBg = 'bg-gradient-to-br from-amber-800/10 via-amber-700/10 to-amber-900/5';
+        borderColor = 'border-amber-600/40';
+      } else if (idx === 3) {
+        rankTitle = 'Runner-up 1';
+        rankBadge = 'bg-blue-600 text-white shadow-blue-600/20';
+        medalIcon = '🎖️';
+        cardBg = 'bg-blue-50/50';
+        borderColor = 'border-blue-200';
+      } else {
+        rankTitle = 'Runner-up 2';
+        rankBadge = 'bg-indigo-600 text-white shadow-indigo-600/20';
+        medalIcon = '🎖️';
+        cardBg = 'bg-indigo-50/50';
+        borderColor = 'border-indigo-200';
+      }
+
+      return {
+        ...item,
+        rank: idx + 1,
+        rankTitle,
+        rankBadge,
+        medalIcon,
+        cardBg,
+        borderColor
+      };
+    });
+
+    // 2. BÁO CÁO ĐỦ ĐIỀU KIỆN THI THĂNG ĐAI
+    // Quy chế rèn luyện tối thiểu môn phái Phật Quang Quyền:
+    // - Từ Lục đai trở xuống (Lam Đai, Lục Đai): mỗi cấp tối thiểu 3 tháng
+    // - Từ Hồng Đai: tối thiểu 6 tháng
+    // - Hoàng đai và Bạch đai: tối thiểu 2 năm (24 tháng)
+    let targetEndDate = new Date();
+    if (reportTimeframe === 'month') {
+      const parts = reportMonth.split('-');
+      if (parts.length === 2) {
+        const y = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10);
+        targetEndDate = new Date(y, m, 0, 23, 59, 59);
+      }
+    } else {
+      targetEndDate = new Date(reportYear, 11, 31, 23, 59, 59);
+    }
+
+    const examEligibilityList = clubStudents.map(student => {
+      let requiredMonths = 3;
+      let requirementLabel = 'Tối thiểu 3 tháng / cấp';
+
+      if (student.currentBelt === 'LAM_DAI' || student.currentBelt === 'LUC_DAI') {
+        requiredMonths = 3;
+        requirementLabel = 'Tối thiểu 3 tháng';
+      } else if (student.currentBelt === 'HONG_DAI') {
+        requiredMonths = 6;
+        requirementLabel = 'Tối thiểu 6 tháng';
+      } else if (student.currentBelt === 'HOANG_DAI' || student.currentBelt === 'BACH_DAI') {
+        requiredMonths = 24;
+        requirementLabel = 'Tối thiểu 2 năm (24 tháng)';
+      }
+
+      // Xác định ngày bắt đầu rèn luyện cấp đai hiện tại
+      const stCerts = (certificates || []).filter(c => c.studentId === student.id && c.issueDate);
+      let latestCertDate = '';
+      if (stCerts.length > 0) {
+        stCerts.sort((a, b) => new Date(b.issueDate).getTime() - new Date(a.issueDate).getTime());
+        latestCertDate = stCerts[0].issueDate;
+      }
+
+      const startDateStr = student.lastPromotionDate || latestCertDate || student.diplomaIssueDate || student.joinDate || '2025-01-01';
+      const startDate = new Date(startDateStr);
+
+      let monthsElapsed = 0;
+      let daysElapsed = 0;
+      if (!isNaN(startDate.getTime())) {
+        const diffMs = targetEndDate.getTime() - startDate.getTime();
+        if (diffMs > 0) {
+          daysElapsed = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+          monthsElapsed = Math.floor(daysElapsed / 30.4375);
+        }
+      }
+
+      const isEligible = monthsElapsed >= requiredMonths;
+      const monthsRemaining = Math.max(0, requiredMonths - monthsElapsed);
+
+      // Cấp đai thi lên tiếp theo (Target Belt)
+      const currentCfg = getBeltConfig(student.currentBelt);
+      const currentLevel = student.currentBeltLevel || 1;
+      let targetBeltName = '';
+      let targetBeltRank = student.currentBelt;
+      let targetBeltLevel = currentLevel + 1;
+
+      if (currentLevel < currentCfg.maxLevels) {
+        targetBeltName = `${currentCfg.name} Cấp ${currentLevel + 1}`;
+        targetBeltLevel = currentLevel + 1;
+      } else {
+        const BELT_ORDER_RANKS = ['LAM_DAI', 'LUC_DAI', 'HONG_DAI', 'HOANG_DAI', 'BACH_DAI'];
+        const cIdx = BELT_ORDER_RANKS.indexOf(student.currentBelt);
+        if (cIdx >= 0 && cIdx < BELT_ORDER_RANKS.length - 1) {
+          targetBeltRank = BELT_ORDER_RANKS[cIdx + 1] as any;
+          const nextCfg = getBeltConfig(targetBeltRank);
+          targetBeltLevel = 1;
+          targetBeltName = `${nextCfg.name} Cấp 1`;
+        } else {
+          targetBeltName = `${currentCfg.name} Cấp ${currentLevel + 1}`;
+        }
+      }
+
+      const stStat = studentStats.find(s => s.student.id === student.id);
+      const attendanceRate = stStat ? stStat.rate : 0;
+
+      return {
+        student,
+        startDateStr,
+        monthsElapsed,
+        daysElapsed,
+        requiredMonths,
+        requirementLabel,
+        isEligible,
+        monthsRemaining,
+        targetBeltName,
+        targetBeltRank,
+        targetBeltLevel,
+        attendanceRate
+      };
+    });
+
+    examEligibilityList.sort((a, b) => {
+      if (a.isEligible !== b.isEligible) {
+        return a.isEligible ? -1 : 1;
+      }
+      return b.monthsElapsed - a.monthsElapsed;
+    });
+
+    const eligibleCount = examEligibilityList.filter(e => e.isEligible).length;
+    const inProgressCount = examEligibilityList.filter(e => !e.isEligible).length;
+
     return {
       totalRecordedSessions,
       presentCountTotal,
       absentCountTotal,
       overallRate,
-      studentStats
+      studentStats,
+      top5Attendance,
+      examEligibilityList,
+      eligibleCount,
+      inProgressCount
     };
-  }, [attendance, currentClub.id, reportTimeframe, reportMonth, reportYear, clubStudents]);
+  }, [attendance, currentClub.id, reportTimeframe, reportMonth, reportYear, clubStudents, certificates]);
+
+  const filteredExamList = useMemo(() => {
+    if (examFilter === 'ELIGIBLE') {
+      return reportData.examEligibilityList.filter(e => e.isEligible);
+    }
+    if (examFilter === 'INELIGIBLE') {
+      return reportData.examEligibilityList.filter(e => !e.isEligible);
+    }
+    return reportData.examEligibilityList;
+  }, [reportData.examEligibilityList, examFilter]);
 
   return (
     <div className="space-y-4 animate-in fade-in duration-200 w-full min-w-0 overflow-x-hidden">
@@ -1252,144 +1441,546 @@ ${absentListStr}
             </div>
           </div>
 
-          {/* KHỐI VÒNG TRÒN TỶ LỆ % CHUYÊN CẦN (CIRCULAR PROGRESS RING) */}
-          <div className="p-4 sm:p-5 bg-gradient-to-br from-slate-50 via-white to-blue-50/40 rounded-3xl border border-slate-200/90 shadow-2xs flex flex-col sm:flex-row items-center justify-around gap-4 sm:gap-6">
-            {/* Vòng tròn SVG */}
-            <div className="relative w-32 h-32 shrink-0 flex items-center justify-center">
-              {(() => {
-                const radius = 44;
-                const circumference = 2 * Math.PI * radius;
-                const ratePercent = Math.min(100, Math.max(0, reportData.overallRate));
-                const strokeOffset = circumference - (ratePercent / 100) * circumference;
-                const strokeColor = ratePercent >= 80 ? '#10b981' : ratePercent >= 60 ? '#0072de' : '#f43f5e';
-
-                return (
-                  <>
-                    <svg className="w-full h-full transform -rotate-90" viewBox="0 0 110 110">
-                      <circle
-                        cx="55"
-                        cy="55"
-                        r={radius}
-                        className="stroke-slate-200"
-                        strokeWidth="9"
-                        fill="transparent"
-                      />
-                      <circle
-                        cx="55"
-                        cy="55"
-                        r={radius}
-                        className="transition-all duration-700 ease-out"
-                        stroke={strokeColor}
-                        strokeWidth="9"
-                        strokeDasharray={circumference}
-                        strokeDashoffset={strokeOffset}
-                        strokeLinecap="round"
-                        fill="transparent"
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                      <span className="text-2xl font-black text-slate-900 leading-none">
-                        {ratePercent}%
-                      </span>
-                      <span className="text-[10.5px] font-bold text-slate-500 mt-1">
-                        Chuyên cần
-                      </span>
-                    </div>
-                  </>
-                );
-              })()}
-            </div>
-
-            {/* Các chỉ số thống kê bên cạnh vòng tròn */}
-            <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 text-xs w-full sm:w-auto">
-              <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs">
-                <div className="text-slate-400 text-[10.5px] font-medium">Buổi đã điểm danh</div>
-                <div className="font-black text-slate-900 font-mono text-base mt-0.5">{reportData.totalRecordedSessions} buổi</div>
-              </div>
-              <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs">
-                <div className="text-emerald-600 text-[10.5px] font-medium">Tổng lượt có mặt</div>
-                <div className="font-black text-emerald-700 font-mono text-base mt-0.5">{reportData.presentCountTotal} lượt</div>
-              </div>
-              <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs">
-                <div className="text-rose-600 text-[10.5px] font-medium">Tổng lượt vắng</div>
-                <div className="font-black text-rose-700 font-mono text-base mt-0.5">{reportData.absentCountTotal} lượt</div>
-              </div>
-              <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs">
-                <div className="text-[#0072de] text-[10.5px] font-medium">Sĩ số CLB</div>
-                <div className="font-black text-[#0072de] font-mono text-base mt-0.5">{clubStudents.length} võ sinh</div>
-              </div>
-            </div>
+          {/* 2 Tab chuyển đổi: Chuyên cần & Top 5 / Đủ điều kiện thi thăng đai */}
+          <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-2xl border border-slate-200">
+            <button
+              type="button"
+              onClick={() => setReportTab('top5')}
+              className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+                reportTab === 'top5'
+                  ? 'bg-white text-[#0072de] shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Trophy className="w-3.5 h-3.5 text-amber-500" />
+              <span>Chuyên Cần &amp; Top 5</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setReportTab('exam_eligibility')}
+              className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+                reportTab === 'exam_eligibility'
+                  ? 'bg-white text-[#0072de] shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <GraduationCap className="w-3.5 h-3.5 text-[#0072de]" />
+              <span>Đủ Đ/K Thi Thăng Đai</span>
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-emerald-600 text-white font-mono font-bold leading-none">
+                {reportData.eligibleCount}
+              </span>
+            </button>
           </div>
 
-          {/* Bảng danh sách tỷ lệ chuyên cần từng võ sinh */}
-          <div className="space-y-2">
-            <div className="text-xs font-bold text-slate-800 flex items-center justify-between">
-              <span>Bảng chuyên cần từng võ sinh ({reportTimeframe === 'month' ? `Tháng ${reportMonth.split('-')[1]}` : `Năm ${reportYear}`}):</span>
-              <span className="text-[11px] font-medium text-slate-500">{clubStudents.length} võ sinh</span>
-            </div>
+          {/* ============================================================== */}
+          {/* TAB 1: BÁO CÁO CHUYÊN CẦN & TOP 5 KHEN THƯỞNG                   */}
+          {/* ============================================================== */}
+          {reportTab === 'top5' && (
+            <div className="space-y-4">
+              {/* KHỐI VÒNG TRÒN TỶ LỆ % CHUYÊN CẦN (CIRCULAR PROGRESS RING) */}
+              <div className="p-4 sm:p-5 bg-gradient-to-br from-slate-50 via-white to-blue-50/40 rounded-3xl border border-slate-200/90 shadow-2xs flex flex-col sm:flex-row items-center justify-around gap-4 sm:gap-6">
+                {/* Vòng tròn SVG */}
+                <div className="relative w-32 h-32 shrink-0 flex items-center justify-center">
+                  {(() => {
+                    const radius = 44;
+                    const circumference = 2 * Math.PI * radius;
+                    const ratePercent = Math.min(100, Math.max(0, reportData.overallRate));
+                    const strokeOffset = circumference - (ratePercent / 100) * circumference;
+                    const strokeColor = ratePercent >= 80 ? '#10b981' : ratePercent >= 60 ? '#0072de' : '#f43f5e';
 
-            <div className="rounded-2xl border border-slate-200 bg-white divide-y divide-slate-100 text-xs overflow-hidden shadow-2xs">
-              {reportData.studentStats.length === 0 ? (
-                <div className="p-8 text-center text-slate-400 text-xs">Chưa có dữ liệu điểm danh</div>
-              ) : (
-                reportData.studentStats.map(({ student, present, absent, rate }, idx) => {
-                  const beltCfg = getBeltConfig(student.currentBelt);
-                  const studentCode = formatStudentClubCode(student, currentClub);
+                    return (
+                      <>
+                        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 110 110">
+                          <circle
+                            cx="55"
+                            cy="55"
+                            r={radius}
+                            className="stroke-slate-200"
+                            strokeWidth="9"
+                            fill="transparent"
+                          />
+                          <circle
+                            cx="55"
+                            cy="55"
+                            r={radius}
+                            className="transition-all duration-700 ease-out"
+                            stroke={strokeColor}
+                            strokeWidth="9"
+                            strokeDasharray={circumference}
+                            strokeDashoffset={strokeOffset}
+                            strokeLinecap="round"
+                            fill="transparent"
+                          />
+                        </svg>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                          <span className="text-2xl font-black text-slate-900 leading-none">
+                            {ratePercent}%
+                          </span>
+                          <span className="text-[10.5px] font-bold text-slate-500 mt-1">
+                            Chuyên cần
+                          </span>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
 
-                  return (
-                    <div
-                      key={student.id}
-                      onClick={() => onViewStudentDetail?.(student.id)}
-                      className="p-2.5 sm:p-3 flex items-center justify-between gap-2.5 hover:bg-slate-50 cursor-pointer active:bg-slate-100 transition-colors"
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                        <span className="w-5 text-center text-xs font-mono font-bold text-slate-400 shrink-0">
-                          {idx + 1}
+                {/* Các chỉ số thống kê bên cạnh vòng tròn */}
+                <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 text-xs w-full sm:w-auto">
+                  <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs">
+                    <div className="text-slate-400 text-[10.5px] font-medium">Buổi đã điểm danh</div>
+                    <div className="font-black text-slate-900 font-mono text-base mt-0.5">{reportData.totalRecordedSessions} buổi</div>
+                  </div>
+                  <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs">
+                    <div className="text-emerald-600 text-[10.5px] font-medium">Tổng lượt có mặt</div>
+                    <div className="font-black text-emerald-700 font-mono text-base mt-0.5">{reportData.presentCountTotal} lượt</div>
+                  </div>
+                  <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs">
+                    <div className="text-rose-600 text-[10.5px] font-medium">Tổng lượt vắng</div>
+                    <div className="font-black text-rose-700 font-mono text-base mt-0.5">{reportData.absentCountTotal} lượt</div>
+                  </div>
+                  <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs">
+                    <div className="text-[#0072de] text-[10.5px] font-medium">Sĩ số CLB</div>
+                    <div className="font-black text-[#0072de] font-mono text-base mt-0.5">{clubStudents.length} võ sinh</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* KHỐI TOP 5 CHUYÊN CẦN (KHEN THƯỞNG CUỐI THÁNG / CUỐI NĂM) */}
+              <div className="p-3.5 sm:p-4 bg-gradient-to-r from-amber-50/80 via-yellow-50/50 to-amber-50/30 rounded-3xl border border-amber-200/90 shadow-2xs space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 pb-1 border-b border-amber-200/50">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-xs shrink-0">
+                      <Trophy className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="font-black text-slate-900 text-xs sm:text-sm flex items-center gap-1.5">
+                        <span>Top 5 Chuyên Cần Xuất Sắc</span>
+                        <span className="text-[10px] font-bold text-amber-900 bg-amber-200/70 px-2 py-0.5 rounded-full">
+                          Khen thưởng {reportTimeframe === 'month' ? `cuối tháng ${reportMonth.split('-')[1]}` : `cuối năm ${reportYear}`}
                         </span>
+                      </h4>
+                      <p className="text-[11px] text-slate-500">
+                        Top 5 võ sinh siêng năng nhất: Nhất, Nhì, Ba và 2 Runner-up để vinh danh, trao thưởng
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
+                {reportData.top5Attendance.length === 0 ? (
+                  <div className="p-4 text-center text-slate-400 text-xs">Chưa có dữ liệu điểm danh</div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {/* Hạng Nhất, Nhì, Ba (3 ô nổi bật) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                      {reportData.top5Attendance.slice(0, 3).map(item => {
+                        const beltCfg = getBeltConfig(item.student.currentBelt);
+                        const studentCode = formatStudentClubCode(item.student, currentClub);
+
+                        return (
+                          <div
+                            key={item.student.id}
+                            onClick={() => onViewStudentDetail?.(item.student.id)}
+                            className={`p-3 rounded-2xl border ${item.borderColor} ${item.cardBg} shadow-2xs flex flex-col justify-between cursor-pointer hover:shadow-xs active:scale-[0.99] transition-all`}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-2xs ${item.rankBadge}`}>
+                                <span>{item.medalIcon}</span>
+                                <span>{item.rankTitle}</span>
+                              </span>
+                              <span className="font-mono font-black text-base text-slate-900">
+                                {item.rate}%
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-2.5 my-2.5">
+                              <div
+                                className="w-10 h-10 rounded-full bg-white flex items-center justify-center overflow-hidden border-2 shrink-0 shadow-2xs"
+                                style={{ borderColor: beltCfg.borderHex }}
+                              >
+                                {item.student.avatarUrl ? (
+                                  <img src={item.student.avatarUrl} alt={item.student.fullName} className="w-full h-full object-cover" />
+                                ) : (
+                                  <User className="w-4 h-4 text-slate-400" />
+                                )}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="font-black text-slate-900 text-xs sm:text-sm truncate">
+                                  {item.student.fullName}
+                                </div>
+                                <div className="text-[11px] text-slate-500 font-mono mt-0.5 truncate">
+                                  <span className="text-[#0072de] font-bold">{studentCode}</span> &bull; {beltCfg.name}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="text-[11px] text-slate-600 bg-white/90 rounded-xl px-2.5 py-1.5 flex items-center justify-between border border-slate-200/60 font-medium">
+                              <span>Có mặt:</span>
+                              <span className="font-bold text-emerald-700 font-mono">
+                                {item.present} / {reportData.totalRecordedSessions} buổi
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* 2 Runner-up (Hạng 4 & 5) */}
+                    {reportData.top5Attendance.length > 3 && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {reportData.top5Attendance.slice(3, 5).map(item => {
+                          const beltCfg = getBeltConfig(item.student.currentBelt);
+                          const studentCode = formatStudentClubCode(item.student, currentClub);
+
+                          return (
+                            <div
+                              key={item.student.id}
+                              onClick={() => onViewStudentDetail?.(item.student.id)}
+                              className={`p-2.5 rounded-2xl border ${item.borderColor} ${item.cardBg} flex items-center justify-between gap-2.5 cursor-pointer hover:shadow-xs active:scale-[0.99] transition-all`}
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider shrink-0 ${item.rankBadge}`}>
+                                  {item.medalIcon} {item.rankTitle}
+                                </span>
+                                <div
+                                  className="w-8 h-8 rounded-full bg-white flex items-center justify-center overflow-hidden border-2 shrink-0"
+                                  style={{ borderColor: beltCfg.borderHex }}
+                                >
+                                  {item.student.avatarUrl ? (
+                                    <img src={item.student.avatarUrl} alt={item.student.fullName} className="w-full h-full object-cover" />
+                                  ) : (
+                                    <User className="w-3.5 h-3.5 text-slate-400" />
+                                  )}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="font-bold text-slate-900 text-xs truncate">
+                                    {item.student.fullName}
+                                  </div>
+                                  <div className="text-[10px] text-slate-500 font-mono truncate">
+                                    <span className="text-[#0072de] font-bold">{studentCode}</span> &bull; {beltCfg.name}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="text-right shrink-0">
+                                <div className="font-mono font-black text-xs text-slate-900">
+                                  {item.rate}%
+                                </div>
+                                <div className="text-[10px] text-slate-500 font-mono">
+                                  {item.present} buổi
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Bảng danh sách tỷ lệ chuyên cần từng võ sinh */}
+              <div className="space-y-2">
+                <div className="text-xs font-bold text-slate-800 flex items-center justify-between">
+                  <span>Bảng chuyên cần từng võ sinh ({reportTimeframe === 'month' ? `Tháng ${reportMonth.split('-')[1]}` : `Năm ${reportYear}`}):</span>
+                  <span className="text-[11px] font-medium text-slate-500">{clubStudents.length} võ sinh</span>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white divide-y divide-slate-100 text-xs overflow-hidden shadow-2xs">
+                  {reportData.studentStats.length === 0 ? (
+                    <div className="p-8 text-center text-slate-400 text-xs">Chưa có dữ liệu điểm danh</div>
+                  ) : (
+                    reportData.studentStats.map(({ student, present, absent, rate }, idx) => {
+                      const beltCfg = getBeltConfig(student.currentBelt);
+                      const studentCode = formatStudentClubCode(student, currentClub);
+
+                      return (
                         <div
-                          className="w-8.5 h-8.5 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden border-2 shrink-0"
-                          style={{ borderColor: beltCfg.borderHex }}
+                          key={student.id}
+                          onClick={() => onViewStudentDetail?.(student.id)}
+                          className="p-2.5 sm:p-3 flex items-center justify-between gap-2.5 hover:bg-slate-50 cursor-pointer active:bg-slate-100 transition-colors"
                         >
-                          {student.avatarUrl ? (
-                            <img src={student.avatarUrl} alt={student.fullName} className="w-full h-full object-cover" />
-                          ) : (
-                            <User className="w-4 h-4 text-slate-400" />
-                          )}
+                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                            <span className="w-5 text-center text-xs font-mono font-bold text-slate-400 shrink-0">
+                              {idx + 1}
+                            </span>
+
+                            <div
+                              className="w-8.5 h-8.5 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden border-2 shrink-0"
+                              style={{ borderColor: beltCfg.borderHex }}
+                            >
+                              {student.avatarUrl ? (
+                                <img src={student.avatarUrl} alt={student.fullName} className="w-full h-full object-cover" />
+                              ) : (
+                                <User className="w-4 h-4 text-slate-400" />
+                              )}
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                              <div className="font-bold text-slate-900 truncate leading-snug">
+                                {student.fullName}
+                              </div>
+                              <div className="flex items-center gap-1.5 text-[11px] text-slate-500 leading-tight mt-0.5">
+                                <span className="font-mono font-bold text-[#0072de]">{studentCode}</span>
+                                <span className="text-slate-300">&bull;</span>
+                                <span>Có: <strong className="text-emerald-700">{present}</strong></span>
+                                <span className="text-slate-300">&bull;</span>
+                                <span>Vắng: <strong className="text-rose-700">{absent}</strong></span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Badge tỷ lệ % */}
+                          <span
+                            className={`px-2.5 py-1 rounded-xl text-xs font-mono font-bold shrink-0 shadow-2xs ${
+                              rate >= 80
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                : rate >= 60
+                                ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                : 'bg-rose-50 text-rose-700 border border-rose-200'
+                            }`}
+                          >
+                            {rate}%
+                          </span>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ============================================================== */}
+          {/* TAB 2: BÁO CÁO ĐỦ ĐIỀU KIỆN THI THĂNG ĐAI                      */}
+          {/* ============================================================== */}
+          {reportTab === 'exam_eligibility' && (
+            <div className="space-y-4">
+              {/* 1. Hộp giải thích quy chế thời gian rèn luyện tối thiểu môn phái */}
+              <div className="p-3.5 bg-gradient-to-r from-blue-50/90 via-indigo-50/70 to-purple-50/50 rounded-2xl border border-blue-200/80 shadow-2xs space-y-2.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-[#0072de] text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <GraduationCap className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="font-black text-slate-900 text-xs sm:text-sm">
+                      Quy Chế Thời Gian Rèn Luyện Tối Thiểu Thi Thăng Đai
+                    </h4>
+                    <p className="text-[11px] text-slate-500">
+                      Điều kiện thời gian tích lũy để được đăng ký thi thăng đai (Môn phái Phật Quang Quyền)
+                    </p>
+                  </div>
+                </div>
+
+                {/* 3 mốc quy chế rõ ràng */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-xs">
+                  <div className="bg-white/95 p-2.5 rounded-xl border border-blue-100 flex items-center gap-2 shadow-2xs">
+                    <span className="w-3 h-3 rounded-full bg-emerald-500 shrink-0" />
+                    <div>
+                      <div className="font-bold text-slate-900 text-[11px]">Lam Đai &amp; Lục Đai</div>
+                      <div className="text-[10.5px] text-emerald-700 font-semibold">Tối thiểu 3 tháng / cấp</div>
+                    </div>
+                  </div>
+                  <div className="bg-white/95 p-2.5 rounded-xl border border-blue-100 flex items-center gap-2 shadow-2xs">
+                    <span className="w-3 h-3 rounded-full bg-rose-500 shrink-0" />
+                    <div>
+                      <div className="font-bold text-slate-900 text-[11px]">Hồng Đai</div>
+                      <div className="text-[10.5px] text-rose-700 font-semibold">Tối thiểu 6 tháng / cấp</div>
+                    </div>
+                  </div>
+                  <div className="bg-white/95 p-2.5 rounded-xl border border-blue-100 flex items-center gap-2 shadow-2xs">
+                    <span className="w-3 h-3 rounded-full bg-amber-500 shrink-0" />
+                    <div>
+                      <div className="font-bold text-slate-900 text-[11px]">Hoàng Đai &amp; Bạch Đai</div>
+                      <div className="text-[10.5px] text-amber-700 font-semibold">Tối thiểu 2 năm (24 tháng)</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. Thống kê KPI số lượng đủ điều kiện */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
+                <div className="bg-emerald-50/80 p-3 rounded-2xl border border-emerald-200 shadow-2xs">
+                  <div className="text-emerald-700 text-[11px] font-bold flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Đủ điều kiện dự thi</span>
+                  </div>
+                  <div className="font-black text-emerald-800 font-mono text-xl sm:text-2xl mt-0.5">
+                    {reportData.eligibleCount} <span className="text-xs font-normal">võ sinh</span>
+                  </div>
+                  <div className="text-[10px] text-emerald-600 mt-0.5">
+                    Đã hoàn thành mốc thời gian quy định
+                  </div>
+                </div>
+
+                <div className="bg-amber-50/80 p-3 rounded-2xl border border-amber-200 shadow-2xs">
+                  <div className="text-amber-700 text-[11px] font-bold flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>Đang rèn luyện</span>
+                  </div>
+                  <div className="font-black text-amber-800 font-mono text-xl sm:text-2xl mt-0.5">
+                    {reportData.inProgressCount} <span className="text-xs font-normal">võ sinh</span>
+                  </div>
+                  <div className="text-[10px] text-amber-600 mt-0.5">
+                    Chưa đủ thời gian tối thiểu
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 shadow-2xs col-span-2 sm:col-span-1">
+                  <div className="text-slate-500 text-[11px] font-bold flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5" />
+                    <span>Tổng sĩ số CLB</span>
+                  </div>
+                  <div className="font-black text-slate-900 font-mono text-xl sm:text-2xl mt-0.5">
+                    {clubStudents.length} <span className="text-xs font-normal">võ sinh</span>
+                  </div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">
+                    Tỷ lệ đủ đ/k: {Math.round((reportData.eligibleCount / (clubStudents.length || 1)) * 100)}%
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Bộ lọc trạng thái */}
+              <div className="flex items-center gap-1.5 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setExamFilter('ALL')}
+                  className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
+                    examFilter === 'ALL'
+                      ? 'bg-[#0072de] text-white shadow-xs'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  Tất cả ({reportData.examEligibilityList.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setExamFilter('ELIGIBLE')}
+                  className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
+                    examFilter === 'ELIGIBLE'
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
+                  }`}
+                >
+                  ✓ Đủ điều kiện ({reportData.eligibleCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setExamFilter('INELIGIBLE')}
+                  className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
+                    examFilter === 'INELIGIBLE'
+                      ? 'bg-amber-600 text-white shadow-xs'
+                      : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'
+                  }`}
+                >
+                  ⏳ Chưa đủ ({reportData.inProgressCount})
+                </button>
+              </div>
+
+              {/* 4. Danh sách võ sinh chi tiết */}
+              <div className="rounded-2xl border border-slate-200 bg-white divide-y divide-slate-100 text-xs overflow-hidden shadow-2xs">
+                {filteredExamList.length === 0 ? (
+                  <div className="p-8 text-center text-slate-400">
+                    Không có võ sinh nào trong danh mục này.
+                  </div>
+                ) : (
+                  filteredExamList.map((item, idx) => {
+                    const currentBeltCfg = getBeltConfig(item.student.currentBelt);
+                    const studentCode = formatStudentClubCode(item.student, currentClub);
+                    const progressPct = Math.min(100, Math.round((item.monthsElapsed / item.requiredMonths) * 100));
+
+                    return (
+                      <div
+                        key={item.student.id}
+                        onClick={() => onViewStudentDetail?.(item.student.id)}
+                        className="p-3 hover:bg-slate-50/80 cursor-pointer transition-colors space-y-2"
+                      >
+                        {/* Dòng 1: Badge trạng thái + Đai thi lên */}
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="w-5 text-center text-xs font-mono font-bold text-slate-400">
+                              {idx + 1}
+                            </span>
+                            {item.isEligible ? (
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 shadow-2xs">
+                                <Check className="w-3 h-3 text-emerald-700" />
+                                <span>ĐỦ ĐIỀU KIỆN THI</span>
+                              </span>
+                            ) : (
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1">
+                                <Clock className="w-3 h-3 text-amber-700" />
+                                <span>Thiếu {item.monthsRemaining} tháng</span>
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-1 text-[11px]">
+                            <span className="text-slate-400 font-medium">Mục tiêu:</span>
+                            <span className="text-[#0072de] bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200/60 font-bold font-mono">
+                              {item.targetBeltName}
+                            </span>
+                          </div>
                         </div>
 
-                        <div className="min-w-0 flex-1">
-                          <div className="font-bold text-slate-900 truncate leading-snug">
-                            {student.fullName}
+                        {/* Dòng 2: Avatar + Tên + Thông tin tích lũy */}
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden border-2 shrink-0 shadow-2xs"
+                            style={{ borderColor: currentBeltCfg.borderHex }}
+                          >
+                            {item.student.avatarUrl ? (
+                              <img src={item.student.avatarUrl} alt={item.student.fullName} className="w-full h-full object-cover" />
+                            ) : (
+                              <User className="w-4 h-4 text-slate-400" />
+                            )}
                           </div>
-                          <div className="flex items-center gap-1.5 text-[11px] text-slate-500 leading-tight mt-0.5">
-                            <span className="font-mono font-bold text-[#0072de]">{studentCode}</span>
-                            <span className="text-slate-300">&bull;</span>
-                            <span>Có: <strong className="text-emerald-700">{present}</strong></span>
-                            <span className="text-slate-300">&bull;</span>
-                            <span>Vắng: <strong className="text-rose-700">{absent}</strong></span>
+
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="font-bold text-slate-900 text-sm truncate">
+                                {item.student.fullName}
+                              </div>
+                              <div className="text-[11px] font-mono shrink-0">
+                                Chuyên cần: <strong className={item.attendanceRate >= 80 ? 'text-emerald-700' : 'text-slate-700'}>{item.attendanceRate}%</strong>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5 truncate">
+                              <span className="font-mono text-[#0072de] font-bold">{studentCode}</span>
+                              <span>&bull;</span>
+                              <span>{currentBeltCfg.name} Cấp {item.student.currentBeltLevel}</span>
+                              <span>&bull;</span>
+                              <span>Bắt đầu: {formatDateVN(item.startDateStr)}</span>
+                            </div>
+
+                            {/* Progress bar tích lũy thời gian */}
+                            <div className="mt-2 space-y-1">
+                              <div className="flex items-center justify-between text-[10.5px]">
+                                <span className="text-slate-500">
+                                  Đã rèn luyện: <strong className="text-slate-900 font-mono">{item.monthsElapsed} tháng</strong> (Yêu cầu: {item.requiredMonths} tháng)
+                                </span>
+                                <span className="font-mono font-bold text-slate-700">
+                                  {progressPct}%
+                                </span>
+                              </div>
+                              <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden border border-slate-200/50">
+                                <div
+                                  className={`h-full rounded-full transition-all duration-500 ${
+                                    item.isEligible ? 'bg-emerald-500' : 'bg-amber-500'
+                                  }`}
+                                  style={{ width: `${progressPct}%` }}
+                                />
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
-
-                      {/* Badge tỷ lệ % */}
-                      <span
-                        className={`px-2.5 py-1 rounded-xl text-xs font-mono font-bold shrink-0 shadow-2xs ${
-                          rate >= 80
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                            : rate >= 60
-                            ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                            : 'bg-rose-50 text-rose-700 border border-rose-200'
-                        }`}
-                      >
-                        {rate}%
-                      </span>
-                    </div>
-                  );
-                })
-              )}
+                    );
+                  })
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 
@@ -1608,7 +2199,7 @@ ${absentListStr}
       {/* ============================================================== */}
       {isReportModalOpen && (
         <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-900/60 animate-in fade-in duration-150">
-          <div className="bg-white rounded-3xl max-w-lg w-full shadow-2xl p-6 border border-slate-200 space-y-4 animate-in zoom-in-95 duration-150">
+          <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl p-5 sm:p-6 border border-slate-200 space-y-4 animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
             {/* Header modal báo cáo */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
@@ -1617,10 +2208,10 @@ ${absentListStr}
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-slate-900">
-                    Báo Cáo Chuyên Cần
+                    Báo Cáo Điểm Danh &amp; Xét Thăng Đai
                   </h3>
                   <p className="text-[11px] text-slate-500">
-                    Thống kê tỷ lệ phần trăm theo tháng hoặc theo năm
+                    Thống kê tỷ lệ chuyên cần, khen thưởng Top 5 và xét đủ điều kiện thi thăng đai &bull; {currentClub.name}
                   </p>
                 </div>
               </div>
@@ -1684,119 +2275,461 @@ ${absentListStr}
               </div>
             </div>
 
-            {/* KHỐI VÒNG TRÒN TỶ LỆ % CHUYÊN CẦN (CIRCULAR PROGRESS RING) */}
-            <div className="p-4 bg-gradient-to-br from-slate-50 to-blue-50/30 rounded-3xl border border-slate-200/90 flex flex-col sm:flex-row items-center justify-around gap-4">
-              {/* Vòng tròn SVG */}
-              <div className="relative w-28 h-28 shrink-0 flex items-center justify-center">
-                {(() => {
-                  const radius = 40;
-                  const circumference = 2 * Math.PI * radius;
-                  const ratePercent = Math.min(100, Math.max(0, reportData.overallRate));
-                  const strokeOffset = circumference - (ratePercent / 100) * circumference;
-                  const strokeColor = ratePercent >= 80 ? '#10b981' : ratePercent >= 60 ? '#0072de' : '#f43f5e';
-
-                  return (
-                    <>
-                      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                        {/* Vòng nền mờ */}
-                        <circle
-                          cx="50"
-                          cy="50"
-                          r={radius}
-                          className="stroke-slate-200"
-                          strokeWidth="8"
-                          fill="transparent"
-                        />
-                        {/* Vòng tỷ lệ phần trăm */}
-                        <circle
-                          cx="50"
-                          cy="50"
-                          r={radius}
-                          className="transition-all duration-700 ease-out"
-                          stroke={strokeColor}
-                          strokeWidth="8"
-                          strokeDasharray={circumference}
-                          strokeDashoffset={strokeOffset}
-                          strokeLinecap="round"
-                          fill="transparent"
-                        />
-                      </svg>
-                      {/* Số % hiển thị ở tâm vòng tròn */}
-                      <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                        <span className="text-xl font-black text-slate-900 leading-none">
-                          {ratePercent}%
-                        </span>
-                        <span className="text-[10px] font-bold text-slate-500 mt-0.5">
-                          Chuyên cần
-                        </span>
-                      </div>
-                    </>
-                  );
-                })()}
-              </div>
-
-              {/* Các chỉ số thống kê bên cạnh vòng tròn */}
-              <div className="space-y-2 text-xs w-full sm:w-auto">
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-slate-500">Số buổi đã điểm danh:</span>
-                  <span className="font-bold text-slate-900 font-mono">{reportData.totalRecordedSessions} buổi</span>
-                </div>
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-slate-500">Tổng lượt có mặt:</span>
-                  <span className="font-bold text-emerald-700 font-mono">{reportData.presentCountTotal} lượt</span>
-                </div>
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-slate-500">Tổng lượt vắng:</span>
-                  <span className="font-bold text-rose-700 font-mono">{reportData.absentCountTotal} lượt</span>
-                </div>
-                <div className="flex items-center justify-between gap-4 pt-1 border-t border-slate-200/60">
-                  <span className="text-slate-600 font-semibold">Sĩ số trung bình:</span>
-                  <span className="font-black text-[#0072de] font-mono">{clubStudents.length} võ sinh</span>
-                </div>
-              </div>
+            {/* 2 Tab chuyển đổi trong Modal: Chuyên cần & Top 5 / Đủ điều kiện thi thăng đai */}
+            <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-2xl border border-slate-200 text-xs">
+              <button
+                type="button"
+                onClick={() => setReportTab('top5')}
+                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl font-bold transition-all cursor-pointer ${
+                  reportTab === 'top5'
+                    ? 'bg-white text-[#0072de] shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Trophy className="w-3.5 h-3.5 text-amber-500" />
+                <span>Chuyên Cần &amp; Top 5</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setReportTab('exam_eligibility')}
+                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl font-bold transition-all cursor-pointer ${
+                  reportTab === 'exam_eligibility'
+                    ? 'bg-white text-[#0072de] shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <GraduationCap className="w-3.5 h-3.5 text-[#0072de]" />
+                <span>Đủ Đ/K Thi Thăng Đai</span>
+                <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-emerald-600 text-white font-mono font-bold leading-none">
+                  {reportData.eligibleCount}
+                </span>
+              </button>
             </div>
 
-            {/* Bảng tóm tắt tỷ lệ chuyên cần từng võ sinh */}
-            <div className="space-y-1.5">
-              <div className="text-xs font-bold text-slate-800 flex items-center justify-between">
-                <span>Tỷ lệ chuyên cần từng võ sinh ({reportTimeframe === 'month' ? `Tháng ${reportMonth.split('-')[1]}` : `Năm ${reportYear}`}):</span>
-                <span className="text-[11px] font-normal text-slate-500">{clubStudents.length} võ sinh</span>
-              </div>
+            {/* NỘI DUNG TAB 1: CHUYÊN CẦN & TOP 5 */}
+            {reportTab === 'top5' && (
+              <div className="space-y-4">
+                {/* KHỐI VÒNG TRÒN TỶ LỆ % CHUYÊN CẦN (CIRCULAR PROGRESS RING) */}
+                <div className="p-4 bg-gradient-to-br from-slate-50 to-blue-50/30 rounded-3xl border border-slate-200/90 flex flex-col sm:flex-row items-center justify-around gap-4">
+                  {/* Vòng tròn SVG */}
+                  <div className="relative w-28 h-28 shrink-0 flex items-center justify-center">
+                    {(() => {
+                      const radius = 40;
+                      const circumference = 2 * Math.PI * radius;
+                      const ratePercent = Math.min(100, Math.max(0, reportData.overallRate));
+                      const strokeOffset = circumference - (ratePercent / 100) * circumference;
+                      const strokeColor = ratePercent >= 80 ? '#10b981' : ratePercent >= 60 ? '#0072de' : '#f43f5e';
 
-              <div className="max-h-40 overflow-y-auto rounded-2xl border border-slate-200 bg-white divide-y divide-slate-100 text-xs">
-                {reportData.studentStats.length === 0 ? (
-                  <div className="p-4 text-center text-slate-400">Chưa có dữ liệu</div>
-                ) : (
-                  reportData.studentStats.map(({ student, present, absent, rate }) => (
-                    <div key={student.id} className="p-2.5 flex items-center justify-between gap-2">
-                      <div className="font-bold text-slate-900 truncate max-w-[180px]">
-                        {student.fullName}
+                      return (
+                        <>
+                          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                            <circle
+                              cx="50"
+                              cy="50"
+                              r={radius}
+                              className="stroke-slate-200"
+                              strokeWidth="8"
+                              fill="transparent"
+                            />
+                            <circle
+                              cx="50"
+                              cy="50"
+                              r={radius}
+                              className="transition-all duration-700 ease-out"
+                              stroke={strokeColor}
+                              strokeWidth="8"
+                              strokeDasharray={circumference}
+                              strokeDashoffset={strokeOffset}
+                              strokeLinecap="round"
+                              fill="transparent"
+                            />
+                          </svg>
+                          <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                            <span className="text-xl font-black text-slate-900 leading-none">
+                              {ratePercent}%
+                            </span>
+                            <span className="text-[10px] font-bold text-slate-500 mt-0.5">
+                              Chuyên cần
+                            </span>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Các chỉ số thống kê bên cạnh vòng tròn */}
+                  <div className="space-y-1.5 text-xs w-full sm:w-auto">
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-slate-500">Số buổi đã điểm danh:</span>
+                      <span className="font-bold text-slate-900 font-mono">{reportData.totalRecordedSessions} buổi</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-slate-500">Tổng lượt có mặt:</span>
+                      <span className="font-bold text-emerald-700 font-mono">{reportData.presentCountTotal} lượt</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-slate-500">Tổng lượt vắng:</span>
+                      <span className="font-bold text-rose-700 font-mono">{reportData.absentCountTotal} lượt</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-4 pt-1 border-t border-slate-200/60">
+                      <span className="text-slate-600 font-semibold">Sĩ số trung bình:</span>
+                      <span className="font-black text-[#0072de] font-mono">{clubStudents.length} võ sinh</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* KHỐI TOP 5 KHEN THƯỞNG CHUYÊN CẦN */}
+                <div className="p-3.5 bg-gradient-to-r from-amber-50/80 via-yellow-50/50 to-amber-50/30 rounded-2xl border border-amber-200/80 space-y-2.5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs shrink-0">
+                      <Trophy className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="font-black text-slate-900 text-xs sm:text-sm flex items-center gap-1.5">
+                        <span>Top 5 Chuyên Cần Xuất Sắc</span>
+                        <span className="text-[10px] font-bold text-amber-900 bg-amber-200/70 px-2 py-0.5 rounded-full">
+                          Khen thưởng {reportTimeframe === 'month' ? `tháng ${reportMonth.split('-')[1]}` : `năm ${reportYear}`}
+                        </span>
+                      </h4>
+                      <p className="text-[10.5px] text-slate-500">
+                        Top 5 võ sinh chăm chỉ nhất để xét khen thưởng cuối kỳ
+                      </p>
+                    </div>
+                  </div>
+
+                  {reportData.top5Attendance.length === 0 ? (
+                    <div className="p-4 text-center text-slate-400 text-xs">Chưa có dữ liệu</div>
+                  ) : (
+                    <div className="space-y-2">
+                      {/* Top 3 */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        {reportData.top5Attendance.slice(0, 3).map(item => {
+                          const beltCfg = getBeltConfig(item.student.currentBelt);
+                          const studentCode = formatStudentClubCode(item.student, currentClub);
+
+                          return (
+                            <div
+                              key={item.student.id}
+                              onClick={() => {
+                                setIsReportModalOpen(false);
+                                onViewStudentDetail?.(item.student.id);
+                              }}
+                              className={`p-2.5 rounded-xl border ${item.borderColor} ${item.cardBg} flex flex-col justify-between cursor-pointer hover:shadow-xs transition-all`}
+                            >
+                              <div className="flex items-center justify-between gap-1">
+                                <span className={`px-2 py-0.5 rounded-full text-[9.5px] font-black uppercase tracking-wider flex items-center gap-1 ${item.rankBadge}`}>
+                                  <span>{item.medalIcon}</span>
+                                  <span>{item.rankTitle}</span>
+                                </span>
+                                <span className="font-mono font-black text-sm text-slate-900">
+                                  {item.rate}%
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-2 my-2">
+                                <div
+                                  className="w-8 h-8 rounded-full bg-white flex items-center justify-center overflow-hidden border-2 shrink-0"
+                                  style={{ borderColor: beltCfg.borderHex }}
+                                >
+                                  {item.student.avatarUrl ? (
+                                    <img src={item.student.avatarUrl} alt={item.student.fullName} className="w-full h-full object-cover" />
+                                  ) : (
+                                    <User className="w-3.5 h-3.5 text-slate-400" />
+                                  )}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="font-bold text-slate-900 text-xs truncate">
+                                    {item.student.fullName}
+                                  </div>
+                                  <div className="text-[10px] text-slate-500 font-mono truncate">
+                                    <span className="text-[#0072de] font-bold">{studentCode}</span> &bull; {beltCfg.name}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="text-[10px] text-slate-600 bg-white/90 rounded-lg px-2 py-1 flex items-center justify-between border border-slate-200/50">
+                                <span>Có mặt:</span>
+                                <span className="font-bold text-emerald-700 font-mono">
+                                  {item.present} / {reportData.totalRecordedSessions} buổi
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
 
-                      <div className="flex items-center gap-3 shrink-0">
-                        <span className="text-[11px] text-slate-500">
-                          {present} Có &bull; {absent} Vắng
-                        </span>
-                        <span
-                          className={`font-mono font-bold text-[11px] px-2 py-0.5 rounded-full border ${
-                            rate >= 80
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                              : rate >= 60
-                              ? 'bg-blue-50 text-blue-700 border-blue-200'
-                              : 'bg-rose-50 text-rose-700 border-rose-200'
-                          }`}
+                      {/* 2 Runner-up */}
+                      {reportData.top5Attendance.length > 3 && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {reportData.top5Attendance.slice(3, 5).map(item => {
+                            const beltCfg = getBeltConfig(item.student.currentBelt);
+                            const studentCode = formatStudentClubCode(item.student, currentClub);
+
+                            return (
+                              <div
+                                key={item.student.id}
+                                onClick={() => {
+                                  setIsReportModalOpen(false);
+                                  onViewStudentDetail?.(item.student.id);
+                                }}
+                                className={`p-2 rounded-xl border ${item.borderColor} ${item.cardBg} flex items-center justify-between gap-2 cursor-pointer hover:shadow-xs transition-all`}
+                              >
+                                <div className="flex items-center gap-2 min-w-0 flex-1">
+                                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase shrink-0 ${item.rankBadge}`}>
+                                    {item.medalIcon} {item.rankTitle}
+                                  </span>
+                                  <div className="min-w-0 flex-1">
+                                    <div className="font-bold text-slate-900 text-xs truncate">
+                                      {item.student.fullName}
+                                    </div>
+                                    <div className="text-[10px] text-slate-500 font-mono truncate">
+                                      <span className="text-[#0072de] font-bold">{studentCode}</span> &bull; {beltCfg.name}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="text-right shrink-0">
+                                  <div className="font-mono font-black text-xs text-slate-900">
+                                    {item.rate}%
+                                  </div>
+                                  <div className="text-[9.5px] text-slate-500">
+                                    {item.present} buổi
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Bảng tóm tắt tỷ lệ chuyên cần từng võ sinh */}
+                <div className="space-y-1.5">
+                  <div className="text-xs font-bold text-slate-800 flex items-center justify-between">
+                    <span>Tỷ lệ chuyên cần từng võ sinh ({reportTimeframe === 'month' ? `Tháng ${reportMonth.split('-')[1]}` : `Năm ${reportYear}`}):</span>
+                    <span className="text-[11px] font-normal text-slate-500">{clubStudents.length} võ sinh</span>
+                  </div>
+
+                  <div className="max-h-48 overflow-y-auto rounded-2xl border border-slate-200 bg-white divide-y divide-slate-100 text-xs">
+                    {reportData.studentStats.length === 0 ? (
+                      <div className="p-4 text-center text-slate-400">Chưa có dữ liệu</div>
+                    ) : (
+                      reportData.studentStats.map(({ student, present, absent, rate }) => (
+                        <div
+                          key={student.id}
+                          onClick={() => {
+                            setIsReportModalOpen(false);
+                            onViewStudentDetail?.(student.id);
+                          }}
+                          className="p-2.5 flex items-center justify-between gap-2 hover:bg-slate-50 cursor-pointer transition-colors"
                         >
-                          {rate}%
-                        </span>
+                          <div className="font-bold text-slate-900 truncate max-w-[220px]">
+                            {student.fullName}
+                          </div>
+
+                          <div className="flex items-center gap-3 shrink-0">
+                            <span className="text-[11px] text-slate-500">
+                              {present} Có &bull; {absent} Vắng
+                            </span>
+                            <span
+                              className={`font-mono font-bold text-[11px] px-2 py-0.5 rounded-full border ${
+                                rate >= 80
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                  : rate >= 60
+                                  ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                  : 'bg-rose-50 text-rose-700 border-rose-200'
+                              }`}
+                            >
+                              {rate}%
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* NỘI DUNG TAB 2: ĐỦ ĐIỀU KIỆN THI THĂNG ĐAI */}
+            {reportTab === 'exam_eligibility' && (
+              <div className="space-y-3.5">
+                {/* 1. Hộp giải thích quy chế */}
+                <div className="p-3 bg-gradient-to-r from-blue-50/90 via-indigo-50/70 to-purple-50/50 rounded-2xl border border-blue-200/80 space-y-2 text-xs">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-xl bg-[#0072de] text-white flex items-center justify-center shrink-0">
+                      <GraduationCap className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="font-black text-slate-900 text-xs">
+                        Quy Chế Thời Gian Rèn Luyện Tối Thiểu Môn Phái
+                      </h4>
+                      <p className="text-[10.5px] text-slate-500">
+                        Phật Quang Quyền: từ Lục đai trở xuống 3 tháng/cấp; Hồng đai 6 tháng; Hoàng/Bạch đai 2 năm
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-0.5">
+                    <div className="bg-white/95 p-2 rounded-xl border border-blue-100 flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
+                      <div>
+                        <div className="font-bold text-slate-900 text-[10.5px]">Lam &amp; Lục Đai</div>
+                        <div className="text-[10px] text-emerald-700 font-semibold">Tối thiểu 3 tháng/cấp</div>
                       </div>
                     </div>
-                  ))
-                )}
+                    <div className="bg-white/95 p-2 rounded-xl border border-blue-100 flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0" />
+                      <div>
+                        <div className="font-bold text-slate-900 text-[10.5px]">Hồng Đai</div>
+                        <div className="text-[10px] text-rose-700 font-semibold">Tối thiểu 6 tháng/cấp</div>
+                      </div>
+                    </div>
+                    <div className="bg-white/95 p-2 rounded-xl border border-blue-100 flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0" />
+                      <div>
+                        <div className="font-bold text-slate-900 text-[10.5px]">Hoàng &amp; Bạch Đai</div>
+                        <div className="text-[10px] text-amber-700 font-semibold">Tối thiểu 2 năm (24 th)</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Thống kê KPI & Bộ lọc */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                  <div className="flex items-center gap-2 text-xs">
+                    <div className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-xl font-bold flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Đủ điều kiện: {reportData.eligibleCount}</span>
+                    </div>
+                    <div className="bg-amber-50 text-amber-800 border border-amber-200 px-3 py-1.5 rounded-xl font-bold flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-amber-600" />
+                      <span>Đang rèn luyện: {reportData.inProgressCount}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setExamFilter('ALL')}
+                      className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                        examFilter === 'ALL'
+                          ? 'bg-[#0072de] text-white'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      Tất cả
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setExamFilter('ELIGIBLE')}
+                      className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                        examFilter === 'ELIGIBLE'
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                      }`}
+                    >
+                      Đủ Đ/K
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setExamFilter('INELIGIBLE')}
+                      className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                        examFilter === 'INELIGIBLE'
+                          ? 'bg-amber-600 text-white'
+                          : 'bg-amber-50 text-amber-700 hover:bg-amber-100'
+                      }`}
+                    >
+                      Chưa đủ
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3. Danh sách võ sinh chi tiết */}
+                <div className="max-h-60 overflow-y-auto rounded-2xl border border-slate-200 bg-white divide-y divide-slate-100 text-xs">
+                  {filteredExamList.length === 0 ? (
+                    <div className="p-6 text-center text-slate-400">
+                      Không có võ sinh nào phù hợp bộ lọc.
+                    </div>
+                  ) : (
+                    filteredExamList.map((item, idx) => {
+                      const currentBeltCfg = getBeltConfig(item.student.currentBelt);
+                      const studentCode = formatStudentClubCode(item.student, currentClub);
+                      const progressPct = Math.min(100, Math.round((item.monthsElapsed / item.requiredMonths) * 100));
+
+                      return (
+                        <div
+                          key={item.student.id}
+                          onClick={() => {
+                            setIsReportModalOpen(false);
+                            onViewStudentDetail?.(item.student.id);
+                          }}
+                          className="p-2.5 hover:bg-slate-50 cursor-pointer transition-colors space-y-1.5"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <span className="w-5 text-center text-xs font-mono font-bold text-slate-400">
+                                {idx + 1}
+                              </span>
+                              {item.isEligible ? (
+                                <span className="px-2 py-0.5 rounded-full text-[9.5px] font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                                  <Check className="w-3 h-3 text-emerald-700" />
+                                  <span>ĐỦ ĐIỀU KIỆN</span>
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1">
+                                  <Clock className="w-3 h-3 text-amber-700" />
+                                  <span>Thiếu {item.monthsRemaining} tháng</span>
+                                </span>
+                              )}
+                              <span className="font-bold text-slate-900 truncate max-w-[140px]">
+                                {item.student.fullName}
+                              </span>
+                              <span className="font-mono text-[#0072de] font-semibold text-[11px]">
+                                ({studentCode})
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-1 text-[11px] shrink-0">
+                              <span className="text-slate-400">Thi lên:</span>
+                              <span className="text-[#0072de] font-bold font-mono bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200/60">
+                                {item.targetBeltName}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between gap-3 text-[10.5px] text-slate-500 pl-7">
+                            <div>
+                              <span>Đã rèn luyện: </span>
+                              <strong className="text-slate-900 font-mono">{item.monthsElapsed} tháng</strong>
+                              <span> / YC: {item.requiredMonths} tháng ({progressPct}%)</span>
+                            </div>
+                            <div>
+                              <span>Chuyên cần: </span>
+                              <strong className={item.attendanceRate >= 80 ? 'text-emerald-700' : 'text-slate-700'}>
+                                {item.attendanceRate}%
+                              </strong>
+                            </div>
+                          </div>
+
+                          <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden pl-7">
+                            <div
+                              className={`h-full rounded-full ${item.isEligible ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                              style={{ width: `${progressPct}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Nút đóng */}
-            <div className="flex items-center justify-end pt-2">
+            <div className="flex items-center justify-end pt-2 border-t border-slate-100">
               <button
                 type="button"
                 onClick={() => setIsReportModalOpen(false)}
