@@ -869,29 +869,20 @@ export const ClubWorkspaceView: React.FC<ClubWorkspaceViewProps> = ({
                             />
                           </div>
 
-                          {/* Thông tin chính: 2 dòng tiết kiệm không gian tối đa */}
+                          {/* Thông tin chính: 2 dòng gọn gàng, hiển thị đầy đủ thông tin thiết yếu */}
                           <div className="min-w-0 flex-1">
-                            {/* Dòng 1: Họ tên + Badge đai nhỏ gọn */}
-                            <div className="flex items-center gap-1.5 min-w-0">
-                              <span className="font-bold text-slate-900 text-sm truncate leading-snug">
-                                {student.fullName}
-                              </span>
-                              <span
-                                className={`shrink-0 inline-flex items-center px-1.5 py-0.2 rounded-md text-[9.5px] font-bold ${getBeltBadgeStyle(student.currentBelt)}`}
-                              >
-                                {beltCfg.name} {student.currentBeltLevel ? `C.${student.currentBeltLevel}` : ''}
-                              </span>
+                            {/* Dòng 1: Họ tên */}
+                            <div className="font-bold text-slate-900 text-sm truncate leading-snug">
+                              {student.fullName}
                             </div>
 
-                            {/* Dòng 2: Mã không dấu • Giới tính / Năm sinh • Chuyên cần % */}
+                            {/* Dòng 2: Mã võ sinh • Giới tính • Năm sinh (Không hiện cấp đai & chuyên cần để tiết kiệm không gian) */}
                             <div className="flex items-center gap-1.5 text-[11px] text-slate-500 leading-tight mt-0.5 truncate">
                               <span className="font-mono font-bold text-[#0072de]">{studentCode}</span>
                               <span className="text-slate-300">&bull;</span>
-                              <span>{student.gender || 'Nam'}, {birthYear}</span>
+                              <span>{student.gender || 'Nam'}</span>
                               <span className="text-slate-300">&bull;</span>
-                              <span className={`font-semibold ${attendanceRate >= 80 ? 'text-emerald-600' : attendanceRate >= 60 ? 'text-amber-600' : 'text-rose-600'}`}>
-                                CC: {attendanceRate}%
-                              </span>
+                              <span>{birthYear}</span>
                             </div>
                           </div>
                         </div>
@@ -984,6 +975,7 @@ export const ClubWorkspaceView: React.FC<ClubWorkspaceViewProps> = ({
               initialSubPage={initialAttendanceSubPage}
               onSubPageChange={onAttendanceSubPageChange}
               onNavigateToStudents={() => handleTabChange('students')}
+              onViewStudentDetail={onViewStudentDetail}
             />
           </div>
         )}

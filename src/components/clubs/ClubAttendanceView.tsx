@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { AttendanceRecord, AttendanceStatus, Student } from '../../types';
 import { getBeltConfig, getBeltBadgeStyle } from '../../utils/beltColors';
-import { formatDateVN } from '../../utils/formatters';
+import { formatDateVN, formatStudentClubCode } from '../../utils/formatters';
 import {
   Check,
   X,
@@ -27,6 +27,7 @@ interface ClubAttendanceViewProps {
   onNavigateToStudents?: () => void;
   initialSubPage?: 'taking' | 'history';
   onSubPageChange?: (subPage: 'taking' | 'history') => void;
+  onViewStudentDetail?: (studentId: string) => void;
 }
 
 const WEEKDAY_MAP: Record<number, string> = {
@@ -77,7 +78,8 @@ export const ClubAttendanceView: React.FC<ClubAttendanceViewProps> = ({
   clubId,
   onNavigateToStudents,
   initialSubPage = 'taking',
-  onSubPageChange
+  onSubPageChange,
+  onViewStudentDetail
 }) => {
   const { clubs, students, attendance, saveAttendanceBatch, updateClub, addToast, syncToGoogleSheet, settings } = useApp();
 
@@ -292,6 +294,17 @@ export const ClubAttendanceView: React.FC<ClubAttendanceViewProps> = ({
       ...prev,
       [studentId]: status
     }));
+
+    // Khi tích từ vắng sang có lại thì mục note sẽ auto xóa trống đi và đóng khung note
+    if (status === 'PRESENT') {
+      setNotesDraft(prev => {
+        if (!prev[studentId]) return prev;
+        const next = { ...prev };
+        delete next[studentId];
+        return next;
+      });
+      setOpenNoteStudentId(prev => (prev === studentId ? null : prev));
+    }
   };
 
   // Cập nhật ghi chú cho võ sinh
@@ -765,6 +778,7 @@ ${absentListStr}
                 clubStudents.map((student, idx) => {
                   const isPresent = (attendanceDraft[student.id] || 'PRESENT') === 'PRESENT';
                   const beltCfg = getBeltConfig(student.currentBelt);
+                  const studentCode = formatStudentClubCode(student, currentClub);
                   const birthYear = student.birthYear || (student.dob ? student.dob.split('-')[0] : '---');
                   const currentNote = notesDraft[student.id] || '';
                   const hasCustomNote = currentNote && currentNote !== 'Có mặt' && currentNote !== 'Vắng';
@@ -779,9 +793,13 @@ ${absentListStr}
                           : 'bg-rose-50/40 border-rose-200 shadow-2xs'
                       }`}
                     >
-                      {/* Hàng 1: STT, Avatar viền đai, Họ tên, Đai + Năm sinh, Nút Có/Vắng */}
+                      {/* Hàng 1: STT, Avatar viền đai, Họ tên, Mã + Giới tính + Năm sinh, Nút Có/Vắng */}
                       <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <div
+                          className="flex items-center gap-2 min-w-0 flex-1 cursor-pointer"
+                          onClick={() => onViewStudentDetail?.(student.id)}
+                          title="Xem thông tin cá nhân võ sinh"
+                        >
                           <span className="text-xs font-mono font-bold text-slate-400 w-4 text-center shrink-0">
                             {idx + 1}
                           </span>
@@ -802,25 +820,26 @@ ${absentListStr}
                             <div className="font-bold text-slate-900 text-xs sm:text-sm truncate leading-snug">
                               {student.fullName}
                             </div>
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                              <span
-                                className={`inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md text-[9px] font-bold ${getBeltBadgeStyle(student.currentBelt)}`}
-                              >
-                                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: beltCfg.bgHex }} />
-                                <span>{beltCfg.name} {student.currentBeltLevel ? `C.${student.currentBeltLevel}` : ''}</span>
-                              </span>
-                              <span className="text-[10px] text-slate-400">&bull; {birthYear}</span>
+                            <div className="flex items-center gap-1.5 text-[11px] text-slate-500 leading-tight mt-0.5 truncate">
+                              <span className="font-mono font-bold text-[#0072de]">{studentCode}</span>
+                              <span className="text-slate-300">&bull;</span>
+                              <span>{student.gender || 'Nam'}</span>
+                              <span className="text-slate-300">&bull;</span>
+                              <span>{birthYear}</span>
                               {hasCustomNote && isPresent && !openNoteStudentId && (
-                                <span className="text-[9.5px] text-amber-700 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200 truncate max-w-[85px]">
-                                  {currentNote}
-                                </span>
+                                <>
+                                  <span className="text-slate-300">&bull;</span>
+                                  <span className="text-[9.5px] text-amber-700 bg-amber-50 px-1 py-0.2 rounded border border-amber-200 truncate max-w-[70px]">
+                                    {currentNote}
+                                  </span>
+                                </>
                               )}
                             </div>
                           </div>
                         </div>
 
                         {/* Nút Có / Vắng chuẩn ngón tay + nút mở note khi có mặt */}
-                        <div className="flex items-center gap-1 shrink-0">
+                        <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
                           <div className="inline-flex rounded-xl bg-slate-100 p-0.5 border border-slate-200">
                             <button
                               type="button"
@@ -1017,10 +1036,10 @@ ${absentListStr}
       {/* CÓ NÚT BACK, DẠNG Ô BUỔI 1, BUỔI 2, THỨ NGÀY THÁNG, TỶ LỆ 30/80, NÚT MẮT XEM CHI TIẾT */}
       {/* ============================================================== */}
       {attendanceSubPage === 'history' && (
-        <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-xs space-y-5 animate-in fade-in duration-200">
+        <div className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 border border-slate-200 shadow-xs space-y-4 sm:space-y-5 animate-in fade-in duration-200">
           {/* Thanh tiêu đề có Nút Back & Bộ chọn tháng */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 sm:pb-4 border-b border-slate-100">
+            <div className="flex items-center gap-2.5 sm:gap-3">
               {/* Nút Back quay lại trang điểm danh (chỉ icon) */}
               <button
                 type="button"
@@ -1052,8 +1071,8 @@ ${absentListStr}
             </div>
           </div>
 
-          {/* Lưới các ô Buổi 1, Buổi 2... có thứ ngày tháng (không có năm), tỷ lệ 30/80, nút mắt */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
+          {/* Lưới các ô Buổi 1, Buổi 2... hiển thị 2 ô trên 1 hàng trên mobile */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
             {historySessionsOfMonth.length === 0 ? (
               <div className="col-span-full py-12 text-center text-slate-400 text-xs bg-slate-50 rounded-2xl border border-dashed border-slate-200">
                 Tháng {historySelectedMonth} chưa có buổi tập nào theo lịch cố định ({trainingSchedule.join(', ')}).
@@ -1074,64 +1093,74 @@ ${absentListStr}
                 return (
                   <div
                     key={session.date}
-                    className={`p-4 rounded-2xl border transition-all duration-200 flex flex-col justify-between space-y-3 ${
+                    onClick={() => setSelectedHistorySession(session)}
+                    className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border transition-all duration-200 flex flex-col justify-between cursor-pointer active:scale-[0.98] select-none hover:shadow-xs ${
                       session.isToday
-                        ? 'bg-blue-50/50 border-blue-200 shadow-xs'
+                        ? 'bg-blue-50/60 border-blue-300 shadow-xs ring-1 ring-blue-200/70'
                         : hasRecorded
-                        ? 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-2xs'
-                        : 'bg-slate-50/60 border-slate-200/80 text-slate-400'
+                        ? 'bg-white border-slate-200 hover:border-blue-300'
+                        : 'bg-slate-50/70 border-slate-200/80 text-slate-500 hover:border-slate-300'
                     }`}
                   >
-                    {/* Dòng trên: Buổi X & Tag hôm nay / đã ghi */}
-                    <div className="flex items-center justify-between">
-                      <div className="font-black text-slate-900 text-sm">
-                        Buổi {session.sessionIndex}
-                      </div>
-
-                      {session.isToday && (
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold border border-emerald-300">
-                          Hôm Nay ⭐
-                        </span>
-                      )}
-
-                      {hasRecorded && !session.isToday && (
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200 flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                          <span>Đã lưu</span>
-                        </span>
-                      )}
-
-                      {!hasRecorded && !session.isToday && (
-                        <span className="text-[10px] font-semibold text-slate-400">
-                          Chưa ghi
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Thứ ngày tháng (KHÔNG CÓ NĂM) */}
                     <div>
-                      <div className="text-xs font-bold text-slate-700">
-                        {session.dayName}, {dayMonthStr}
+                      {/* Dòng trên: Buổi X & Tag hôm nay / đã ghi */}
+                      <div className="flex items-center justify-between gap-1 mb-1 sm:mb-1.5">
+                        <div className="font-black text-slate-900 text-xs sm:text-sm tracking-tight truncate">
+                          Buổi {session.sessionIndex}
+                        </div>
+
+                        {session.isToday && (
+                          <span className="px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[9px] sm:text-[10px] font-bold border border-emerald-300 shrink-0 whitespace-nowrap">
+                            Hôm Nay ⭐
+                          </span>
+                        )}
+
+                        {hasRecorded && !session.isToday && (
+                          <span className="px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[9px] sm:text-[10px] font-bold border border-emerald-200 flex items-center gap-0.5 shrink-0 whitespace-nowrap">
+                            <CheckCircle2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-emerald-600 shrink-0" />
+                            <span>Đã lưu</span>
+                          </span>
+                        )}
+
+                        {!hasRecorded && !session.isToday && (
+                          <span className="text-[9.5px] sm:text-[10px] font-semibold text-slate-400 shrink-0 whitespace-nowrap">
+                            Chưa ghi
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Thứ ngày tháng (KHÔNG CÓ NĂM) */}
+                      <div className="text-[11px] sm:text-xs font-bold text-slate-700 leading-snug">
+                        <span className="text-slate-500 font-medium">{session.dayName}, </span>
+                        <span className="text-slate-900 font-bold">{dayMonthStr}</span>
                       </div>
                     </div>
 
-                    {/* Chú thích Tỷ lệ đi học là 30/80 */}
-                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                      <div className="text-xs">
-                        <span className="text-slate-500 font-medium">Tỷ lệ đi học: </span>
-                        <span className={`font-mono font-bold ${hasRecorded ? 'text-emerald-700' : 'text-slate-400'}`}>
-                          {hasRecorded ? `${datePresent}/${totalStudents}` : `---/${totalStudents}`}
-                        </span>
+                    {/* Chú thích Tỷ lệ đi học và Nút mắt xem chi tiết */}
+                    <div className="pt-2 sm:pt-2.5 mt-2.5 sm:mt-3 border-t border-slate-100 flex items-end justify-between gap-1">
+                      <div className="min-w-0">
+                        <div className="text-[10px] text-slate-400 font-medium leading-tight sm:hidden">
+                          Tỷ lệ đi học
+                        </div>
+                        <div className="text-xs leading-snug">
+                          <span className="text-slate-500 font-medium hidden sm:inline">Tỷ lệ đi học: </span>
+                          <span className={`font-mono font-bold ${hasRecorded ? 'text-emerald-700' : 'text-slate-400'}`}>
+                            {hasRecorded ? `${datePresent}/${totalStudents}` : `---/${totalStudents}`}
+                          </span>
+                        </div>
                       </div>
 
                       {/* Nút xem icon mắt để mở pop-up xem chi tiết số lượng và tên võ sinh vắng */}
                       <button
                         type="button"
-                        onClick={() => setSelectedHistorySession(session)}
-                        className="p-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#0072de] transition-colors cursor-pointer active:scale-90"
+                        onClick={e => {
+                          e.stopPropagation();
+                          setSelectedHistorySession(session);
+                        }}
+                        className="p-1.5 sm:p-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#0072de] transition-colors cursor-pointer active:scale-90 shrink-0"
                         title="Xem chi tiết số lượng và danh sách võ sinh vắng"
                       >
-                        <Eye className="w-4 h-4" />
+                        <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       </button>
                     </div>
                   </div>
