@@ -221,7 +221,8 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
                       <td className="py-3 px-4 font-bold text-slate-900">
                         <button
                           onClick={() => onViewDetail(student.id)}
-                          className="hover:text-amber-700 hover:underline text-left"
+                          className="hover:text-amber-700 hover:underline text-left student-name"
+                          data-student-name="true"
                         >
                           {student.fullName}
                         </button>
@@ -314,7 +315,8 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
 
                   <h3
                     onClick={() => onViewDetail(student.id)}
-                    className="font-bold text-sm text-slate-900 group-hover:text-amber-800 transition-colors cursor-pointer truncate"
+                    className="font-bold text-sm text-slate-900 group-hover:text-amber-800 transition-colors cursor-pointer truncate student-name"
+                    data-student-name="true"
                   >
                     {student.fullName}
                   </h3>

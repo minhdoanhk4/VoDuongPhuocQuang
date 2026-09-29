@@ -125,7 +125,7 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
 
             {/* 2. Thông tin ở giữa: Họ Tên, Năm sinh, Giới tính (Không có Pháp danh) */}
             <div className="flex-1 text-center min-w-0 px-1">
-              <h2 className="text-base sm:text-xl font-black text-slate-900 tracking-tight leading-snug">
+              <h2 className="text-base sm:text-xl font-black text-slate-900 tracking-tight leading-snug student-name" data-student-name="true">
                 {student.fullName}
               </h2>
               <div className="flex items-center justify-center gap-2 sm:gap-4 mt-1.5 text-xs sm:text-sm font-semibold text-slate-700 flex-wrap">

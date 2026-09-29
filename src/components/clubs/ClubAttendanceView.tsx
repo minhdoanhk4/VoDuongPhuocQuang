@@ -869,7 +869,7 @@ ${absentListStr}
 
                           {/* 3. Họ và Tên (Không có dòng pháp danh) */}
                           <td className="py-1.5 px-2.5 font-bold text-slate-900">
-                            <span className="truncate block max-w-[170px]" title={student.fullName}>
+                            <span className="truncate block max-w-[170px] student-name" data-student-name="true" title={student.fullName}>
                               {student.fullName}
                             </span>
                           </td>
@@ -994,7 +994,7 @@ ${absentListStr}
                           </div>
 
                           <div className="min-w-0 flex-1">
-                            <div className="font-bold text-slate-900 text-xs sm:text-sm truncate leading-snug">
+                            <div className="font-bold text-slate-900 text-xs sm:text-sm truncate leading-snug student-name" data-student-name="true">
                               {student.fullName}
                             </div>
                             <div className="flex items-center gap-1.5 text-[11px] text-slate-500 leading-tight mt-0.5 truncate">

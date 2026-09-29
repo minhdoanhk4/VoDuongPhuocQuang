@@ -59,25 +59,26 @@ export function calculateExamResult(scores: {
  * Nhãn hiển thị kết quả thi
  */
 export function getResultBadge(result: ExamResult): { label: string; className: string } {
+  const isEn = typeof window !== 'undefined' && localStorage.getItem('pqq_preferred_language') === 'en';
   switch (result) {
     case 'DISTINCTION':
       return {
-        label: 'Thủ Khoa / Xuất Sắc',
+        label: isEn ? 'Valedictorian / Distinction' : 'Thủ Khoa / Xuất Sắc',
         className: 'bg-amber-100 text-amber-800 border-amber-300 font-semibold'
       };
     case 'PASS':
       return {
-        label: 'Đạt Chuẩn Thăng Đai',
+        label: isEn ? 'Promotion Qualified' : 'Đạt Chuẩn Thăng Đai',
         className: 'bg-emerald-100 text-emerald-800 border-emerald-300 font-medium'
       };
     case 'FAIL':
       return {
-        label: 'Chưa Đạt',
+        label: isEn ? 'Not Qualified' : 'Chưa Đạt',
         className: 'bg-rose-100 text-rose-800 border-rose-300'
       };
     default:
       return {
-        label: 'Chờ Chấm Điểm',
+        label: isEn ? 'Pending Grading' : 'Chờ Chấm Điểm',
         className: 'bg-slate-100 text-slate-700 border-slate-300'
       };
   }
@@ -87,17 +88,18 @@ export function getResultBadge(result: ExamResult): { label: string; className: 
  * Nhãn trạng thái võ sinh
  */
 export function getStudentStatusBadge(status: StudentStatus): { label: string; className: string } {
+  const isEn = typeof window !== 'undefined' && localStorage.getItem('pqq_preferred_language') === 'en';
   switch (status) {
     case 'ACTIVE':
-      return { label: 'Đang Tập Luyện', className: 'bg-emerald-100 text-emerald-800 border-emerald-200' };
+      return { label: isEn ? 'Active Training' : 'Đang Tập Luyện', className: 'bg-emerald-100 text-emerald-800 border-emerald-200' };
     case 'LEAVE':
-      return { label: 'Nghỉ Tạm Thời', className: 'bg-amber-100 text-amber-800 border-amber-200' };
+      return { label: isEn ? 'Temporary Leave' : 'Nghỉ Tạm Thời', className: 'bg-amber-100 text-amber-800 border-amber-200' };
     case 'TRANSFERRED':
-      return { label: 'Chuyển CLB', className: 'bg-blue-100 text-blue-800 border-blue-200' };
+      return { label: isEn ? 'Transferred' : 'Chuyển CLB', className: 'bg-blue-100 text-blue-800 border-blue-200' };
     case 'SUSPENDED':
-      return { label: 'Đình Chỉ', className: 'bg-rose-100 text-rose-800 border-rose-200' };
+      return { label: isEn ? 'Suspended' : 'Đình Chỉ', className: 'bg-rose-100 text-rose-800 border-rose-200' };
     default:
-      return { label: 'Khác', className: 'bg-slate-100 text-slate-800 border-slate-200' };
+      return { label: isEn ? 'Other' : 'Khác', className: 'bg-slate-100 text-slate-800 border-slate-200' };
   }
 }
 
@@ -106,23 +108,24 @@ export function getStudentStatusBadge(status: StudentStatus): { label: string; c
  * Còn học (ACTIVE) | Tạm nghỉ (LEAVE / SUSPENDED) | Nghỉ (INACTIVE / TRANSFERRED)
  */
 export function getStudentRosterStatusBadge(status: StudentStatus): { label: string; className: string } {
+  const isEn = typeof window !== 'undefined' && localStorage.getItem('pqq_preferred_language') === 'en';
   switch (status) {
     case 'ACTIVE':
       return {
-        label: 'Còn học',
+        label: isEn ? 'Active' : 'Còn học',
         className: 'bg-emerald-50 text-emerald-700 border-emerald-200'
       };
     case 'LEAVE':
     case 'SUSPENDED':
       return {
-        label: 'Tạm nghỉ',
+        label: isEn ? 'On Leave' : 'Tạm nghỉ',
         className: 'bg-amber-50 text-amber-700 border-amber-200'
       };
     case 'INACTIVE':
     case 'TRANSFERRED':
     default:
       return {
-        label: 'Nghỉ',
+        label: isEn ? 'Inactive' : 'Nghỉ',
         className: 'bg-slate-100 text-slate-600 border-slate-200'
       };
   }

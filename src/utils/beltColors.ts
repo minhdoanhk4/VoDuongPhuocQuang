@@ -15,10 +15,28 @@ export function getBeltConfig(belt: BeltRank) {
   return BELT_CONFIGS[belt] || BELT_CONFIGS.LAM_DAI;
 }
 
+const BELT_ENGLISH_NAMES: Record<BeltRank, string> = {
+  LAM_DAI: 'Blue Belt',
+  LUC_DAI: 'Green Belt',
+  HONG_DAI: 'Red Belt',
+  HOANG_DAI: 'Yellow Belt',
+  BACH_DAI: 'White Belt'
+};
+
 /**
  * Trả về tên hiển thị kèm cấp/gạch (Ví dụ: Lam Đai cấp 2, Bạch Đai)
+ * Tự động đồng bộ song ngữ Việt - Anh
  */
 export function formatBeltWithLevel(belt: BeltRank, level: number = 1): string {
+  const isEn = typeof window !== 'undefined' && localStorage.getItem('pqq_preferred_language') === 'en';
+  if (isEn) {
+    const enName = BELT_ENGLISH_NAMES[belt] || 'Belt';
+    if (belt === 'BACH_DAI') {
+      return level > 1 ? `White Belt (${level}th Dan)` : 'White Belt';
+    }
+    return `${enName} (Level ${level})`;
+  }
+
   const config = getBeltConfig(belt);
   if (belt === 'BACH_DAI') {
     return level > 1 ? `Bạch Đai (Đẳng ${level})` : 'Bạch Đai';

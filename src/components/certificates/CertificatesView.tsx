@@ -166,7 +166,7 @@ export const CertificatesView: React.FC<CertificatesViewProps> = ({ initialSelec
                     </span>
                   </div>
 
-                  <h3 className="font-black text-base text-slate-900 mt-2 group-hover:text-purple-900 transition-colors">
+                  <h3 className="font-black text-base text-slate-900 mt-2 group-hover:text-purple-900 transition-colors student-name" data-student-name="true">
                     {student?.fullName || 'Võ sinh'}
                   </h3>
 

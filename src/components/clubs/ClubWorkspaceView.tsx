@@ -762,7 +762,7 @@ export const ClubWorkspaceView: React.FC<ClubWorkspaceViewProps> = ({
 
                           {/* 4. Họ và Tên (Cố định cột 4, không có dòng pháp danh) */}
                           <td className="py-2 px-2.5 font-bold text-slate-900 sticky left-[191px] z-10 bg-white group-hover:bg-slate-50 min-w-[160px] border-r border-slate-200/90 shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)]">
-                            <span className="truncate block max-w-[165px]" title={student.fullName}>
+                            <span className="truncate block max-w-[165px] student-name" data-student-name="true" title={student.fullName}>
                               {student.fullName}
                             </span>
                           </td>
