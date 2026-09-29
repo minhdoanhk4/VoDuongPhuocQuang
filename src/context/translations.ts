@@ -177,7 +177,7 @@ export const UI_DICTIONARY: Record<string, string> = {
   'Đã lưu': 'Saved',
   'Hủy': 'Cancel',
   'Hủy Bỏ': 'Cancel',
-  'Bỏ qua': 'Dismiss',
+  'Bỏ qua': 'Skip',
   'Đóng': 'Close',
   'Đóng cửa sổ': 'Close window',
   'Xác nhận': 'Confirm',
@@ -667,5 +667,20 @@ export const UI_DICTIONARY: Record<string, string> = {
   'Sao Lưu File JSON': 'JSON File Backup',
   'Sao Lưu & Khôi Phục File Cục Bộ': 'Local Backup & Restore',
   'Đặt Lại Dữ Liệu Mẫu PQQ': 'Reset Sample Data',
-  'Nạp Dữ Liệu Mẫu': 'Load Sample Data'
+  'Nạp Dữ Liệu Mẫu': 'Load Sample Data',
+
+  // 14. Form Võ Sinh 2 Phần (2-Step Student Form)
+  'I/ Thông tin cá nhân': 'I/ Personal Information',
+  'II/ Thông tin cấp đai': 'II/ Belt Information',
+  'I. Thông tin cá nhân': 'I. Personal Information',
+  'II. Thông tin cấp đai': 'II. Belt Information',
+  'Thông Tin Cấp Đai': 'Belt Information',
+  'Thông tin cấp đai': 'Belt Information',
+  'Ảnh thẻ 3x4': '3x4 ID Photo',
+  'Ảnh 3x4': '3x4 Photo',
+  'Tải ảnh thẻ': 'Upload Photo',
+  'Chọn ảnh 3x4': 'Choose 3x4 Photo',
+  'Chọn ảnh': 'Choose Photo',
+  'Xóa ảnh': 'Remove Photo',
+  'Quay lại': 'Back'
 };
