@@ -21,6 +21,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft,
   Home,
+  LogOut,
   Menu,
   Search,
   Settings,
@@ -115,9 +116,9 @@ const pageVariants = {
 };
 
 const AppContent: React.FC = () => {
-  const { clubs, students, certificates, settings, syncStatus, syncToGoogleSheet } = useApp();
+  const { clubs, students, certificates, settings, syncStatus, syncToGoogleSheet, addToast } = useApp();
   const { isUnlocked, userRole, userName, logout } = useAuth();
-  const { t, language } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
 
   // Khôi phục URL route: nếu chưa đăng nhập hoặc vừa login, luôn luôn bắt đầu từ 'home'
   const initialRoute = React.useMemo(() => {
@@ -211,33 +212,29 @@ const AppContent: React.FC = () => {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  // Profile Dropdown Hover Timers
-  const profileTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const handleProfileMouseEnter = () => {
-    if (profileTimeoutRef.current) {
-      clearTimeout(profileTimeoutRef.current);
-      profileTimeoutRef.current = null;
-    }
-    setIsProfileOpen(true);
-  };
-
-  const handleProfileMouseLeave = () => {
-    if (profileTimeoutRef.current) {
-      clearTimeout(profileTimeoutRef.current);
-    }
-    profileTimeoutRef.current = setTimeout(() => {
-      setIsProfileOpen(false);
-    }, 150);
-  };
+  // Profile Dropdown trên Web Laptop: Nhấn icon user để mở/đóng menu sổ xuống
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    return () => {
-      if (profileTimeoutRef.current) {
-        clearTimeout(profileTimeoutRef.current);
+    const handleClickOutside = (e: MouseEvent) => {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(e.target as Node)) {
+        setIsProfileOpen(false);
       }
     };
-  }, []);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsProfileOpen(false);
+      }
+    };
+    if (isProfileOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isProfileOpen]);
 
   const navigateToView = (view: AppView, direction: 'forward' | 'backward' = 'forward') => {
     setSlideDirection(direction);
@@ -397,16 +394,47 @@ const AppContent: React.FC = () => {
             </button>
           )}
 
-          {/* 2. Nút Cài Đặt (Bánh răng) - BỎ TRÊN MOBILE (chỉ hiển thị trên Desktop md trở lên) */}
-          {currentView === 'home' && (
-            <button
-              onClick={() => setIsSettingsOpen(true)}
-              className="hidden md:flex p-2 sm:p-2.5 rounded-full text-slate-600 hover:text-[#0072de] hover:bg-slate-100 transition-all duration-200 cursor-pointer active:scale-95 animate-in fade-in duration-200"
-              title="Cài đặt hệ thống"
-            >
-              <Settings className="w-5 h-5" />
-            </button>
-          )}
+          {/* 2. Nút Hoán Đổi Ngôn Ngữ trên Web Laptop (Chỉ hiện icon lá cờ Anh - Việt, thay thế hoàn toàn nút Setting) */}
+          <button
+            type="button"
+            onClick={() => {
+              const nextLang = language === 'vi' ? 'en' : 'vi';
+              setLanguage(nextLang);
+              addToast(
+                nextLang === 'en' ? 'Switched to English' : 'Đã chuyển sang Tiếng Việt',
+                'info',
+                nextLang === 'en' ? 'Language' : 'Ngôn ngữ'
+              );
+            }}
+            className="hidden md:flex w-9 h-9 sm:w-10 sm:h-10 rounded-full hover:bg-slate-100 active:scale-90 items-center justify-center transition-all duration-200 cursor-pointer border border-slate-200 bg-white shadow-2xs shrink-0 select-none"
+            title={language === 'vi' ? 'Chuyển sang Tiếng Anh (English)' : 'Chuyển sang Tiếng Việt'}
+            aria-label="Hoán đổi ngôn ngữ"
+          >
+            {language === 'vi' ? (
+              /* Lá cờ Việt Nam */
+              <svg viewBox="0 0 512 512" className="w-5 h-5 sm:w-6 sm:h-6 rounded-full shadow-2xs shrink-0 pointer-events-none">
+                <circle cx="256" cy="256" r="256" fill="#da251d" />
+                <polygon
+                  fill="#ffff00"
+                  points="256,92 296,215 425,215 321,291 361,414 256,338 151,414 191,291 87,215 216,215"
+                />
+              </svg>
+            ) : (
+              /* Lá cờ Anh (UK) */
+              <svg viewBox="0 0 512 512" className="w-5 h-5 sm:w-6 sm:h-6 rounded-full shadow-2xs shrink-0 pointer-events-none">
+                <clipPath id="uk-flag-header-circle">
+                  <circle cx="256" cy="256" r="256" />
+                </clipPath>
+                <g clipPath="url(#uk-flag-header-circle)">
+                  <path fill="#012169" d="M0 0h512v512H0z"/>
+                  <path fill="#FFF" d="M0 0l512 512m0-512L0 512" stroke="#FFF" strokeWidth="60"/>
+                  <path fill="#C8102E" d="M0 0l512 512m0-512L0 512" stroke="#C8102E" strokeWidth="40"/>
+                  <path fill="#FFF" d="M256 0v512M0 256h512" stroke="#FFF" strokeWidth="100"/>
+                  <path fill="#C8102E" d="M256 0v512M0 256h512" stroke="#C8102E" strokeWidth="60"/>
+                </g>
+              </svg>
+            )}
+          </button>
 
           {/* 3. Icon Tìm Kiếm (Search) - CHỈ hiển thị trong trang CLB */}
           {currentView === 'club-workspace' && (
@@ -480,16 +508,17 @@ const AppContent: React.FC = () => {
             <Menu className="w-5 h-5 text-slate-700 stroke-[2.2]" />
           </button>
 
-          {/* Desktop: User Avatar (hover mở menu hoặc click mở sidebar trượt từ phải sang) */}
+          {/* Desktop: User Avatar (nhấn icon user sổ menu có thông tin Admin và nút đăng xuất, KHÔNG mở sidebar) */}
           <div
+            ref={profileDropdownRef}
             className="hidden md:block relative"
-            onMouseEnter={handleProfileMouseEnter}
-            onMouseLeave={handleProfileMouseLeave}
           >
             <button
-              onClick={() => setIsRightSidebarOpen(true)}
+              type="button"
+              onClick={() => setIsProfileOpen(prev => !prev)}
               className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#0072de] hover:bg-[#0060bd] active:scale-95 flex items-center justify-center text-white shadow-xs transition-all duration-200 cursor-pointer shrink-0"
-              title="Tài khoản & Thiết lập"
+              title="Tài khoản người dùng"
+              aria-expanded={isProfileOpen}
             >
               <User className="w-5 h-5" />
             </button>
@@ -501,26 +530,31 @@ const AppContent: React.FC = () => {
                   initial={{ opacity: 0, y: -6, scale: 0.96 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -6, scale: 0.96 }}
-                  transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-                  className="absolute right-0 pt-2 z-50"
-                  onMouseEnter={handleProfileMouseEnter}
-                  onMouseLeave={handleProfileMouseLeave}
+                  transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
+                  className="absolute right-0 pt-2 z-50 select-none"
                 >
-                  <div className="w-52 sm:w-56 bg-white rounded-3xl shadow-xl border border-slate-200 p-3 sm:p-4 text-center space-y-2">
-                    <div className="pb-2 border-b border-slate-100 flex items-center justify-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                      <span className="text-xs font-bold text-slate-800">{userName || 'Quản trị viên'}</span>
+                  <div className="w-64 bg-white rounded-3xl shadow-xl border border-slate-200/90 p-4 space-y-3">
+                    {/* Thông tin Admin */}
+                    <div className="flex items-center gap-3 p-3 bg-gradient-to-br from-blue-50/70 to-slate-50 border border-blue-100/80 rounded-2xl">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0072de] to-[#005bb5] text-white flex items-center justify-center shrink-0 shadow-xs">
+                        <User className="w-5 h-5 stroke-[2.2]" />
+                      </div>
+                      <div className="flex-1 min-w-0 text-left">
+                        <div className="font-extrabold text-slate-900 text-sm truncate leading-tight">
+                          {userName || 'Quản trị viên'}
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                          <span className="text-[11px] font-bold text-[#0072de] truncate">
+                            {userRole === 'ADMIN' ? (language === 'vi' ? 'Quản trị viên' : 'Administrator') : userRole}
+                          </span>
+                        </div>
+                      </div>
                     </div>
+
+                    {/* Nút Đăng xuất */}
                     <button
-                      onClick={() => {
-                        setIsProfileOpen(false);
-                        setIsRightSidebarOpen(true);
-                      }}
-                      className="w-full py-2 px-3 rounded-2xl border border-blue-200 bg-blue-50/60 text-[#0072de] font-bold hover:bg-blue-100 text-xs transition-colors cursor-pointer block text-center"
-                    >
-                      Mở Menu &amp; Cài đặt
-                    </button>
-                    <button
+                      type="button"
                       onClick={() => {
                         setIsProfileOpen(false);
                         setCurrentView('home');
@@ -535,12 +569,14 @@ const AppContent: React.FC = () => {
                         }
                         logout();
                       }}
-                      className="w-full py-2.5 px-4 rounded-2xl border border-rose-200 bg-rose-50/50 text-rose-600 font-bold hover:bg-rose-50 text-sm transition-colors cursor-pointer block text-center"
+                      className="w-full py-2.5 px-4 rounded-2xl border border-rose-200 bg-rose-50/70 hover:bg-rose-100 text-rose-600 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs active:scale-95"
                     >
-                      Đăng xuất
+                      <LogOut className="w-4 h-4 stroke-[2.2]" />
+                      <span>{language === 'vi' ? 'Đăng xuất' : 'Sign out'}</span>
                     </button>
-                    <div className="text-center pt-1 text-xs font-semibold text-slate-400">
-                      Version 1.0.1
+
+                    <div className="text-center pt-1 border-t border-slate-100 text-[10px] font-semibold text-slate-400">
+                      Version 1.0.1 &bull; Võ Đường Trí Vũ
                     </div>
                   </div>
                 </motion.div>
