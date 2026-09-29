@@ -126,6 +126,51 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => { storageService.saveVideoSubmissions(videos); }, [videos]);
   useEffect(() => { storageService.saveSettings(settings); }, [settings]);
 
+  // ===================== TỰ ĐỘNG ĐỒNG BỘ GOOGLE SHEETS =====================
+  const triggerAutoSaveStudent = (student: Student) => {
+    if (!settings.googleSheetScriptUrl) return;
+    setSyncStatus('syncing');
+    googleSheetService.saveSingleRecord(
+      settings.googleSheetScriptUrl,
+      settings.secretToken,
+      'saveStudent',
+      student
+    ).then(res => {
+      if (res.success) {
+        setSyncStatus('synced');
+        setLastSyncMessage(`Đã đồng bộ võ sinh lúc ${new Date().toLocaleTimeString('vi-VN')}`);
+        updateSettings({ lastSyncedAt: new Date().toISOString() });
+      } else {
+        setSyncStatus('error');
+      }
+    }).catch(err => {
+      console.warn('Lỗi tự động đẩy võ sinh lên Google Sheet:', err);
+      setSyncStatus('error');
+    });
+  };
+
+  const triggerAutoDeleteStudent = (studentId: string) => {
+    if (!settings.googleSheetScriptUrl) return;
+    setSyncStatus('syncing');
+    googleSheetService.deleteSingleRecord(
+      settings.googleSheetScriptUrl,
+      settings.secretToken,
+      'deleteStudent',
+      studentId
+    ).then(res => {
+      if (res.success) {
+        setSyncStatus('synced');
+        setLastSyncMessage(`Đã đồng bộ xóa võ sinh lúc ${new Date().toLocaleTimeString('vi-VN')}`);
+        updateSettings({ lastSyncedAt: new Date().toISOString() });
+      } else {
+        setSyncStatus('error');
+      }
+    }).catch(err => {
+      console.warn('Lỗi tự động xóa võ sinh trên Google Sheet:', err);
+      setSyncStatus('error');
+    });
+  };
+
   // ===================== CRUD VÕ SINH =====================
   const addStudent = (studentData: Omit<Student, 'id' | 'createdAt' | 'updatedAt'>): Student => {
     const newStudent: Student = {
@@ -136,6 +181,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     setStudents(prev => [newStudent, ...prev]);
     addToast(`Đã thêm võ sinh: ${newStudent.fullName}`, 'success');
+
+    // Tự động đẩy ngay lên Google Sheet chạy nền
+    triggerAutoSaveStudent(newStudent);
+
     return newStudent;
   };
 
@@ -143,6 +192,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const studentWithTime = { ...updatedStudent, updatedAt: new Date().toISOString() };
     setStudents(prev => prev.map(s => s.id === updatedStudent.id ? studentWithTime : s));
     addToast(`Đã cập nhật hồ sơ: ${updatedStudent.fullName}`, 'success');
+
+    // Tự động cập nhật lên Google Sheet chạy nền
+    triggerAutoSaveStudent(studentWithTime);
   };
 
   const deleteStudent = (id: string) => {
@@ -152,6 +204,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setExamSheets(prev => prev.filter(es => es.studentId !== id));
     setCertificates(prev => prev.filter(c => c.studentId !== id));
     addToast(`Đã xóa võ sinh: ${target ? target.fullName : id}`, 'info');
+
+    // Tự động xóa trên Google Sheet chạy nền
+    triggerAutoDeleteStudent(id);
+  };
+
+  const triggerAutoSaveRecord = (action: string, data: any) => {
+    if (!settings.googleSheetScriptUrl) return;
+    setSyncStatus('syncing');
+    googleSheetService.saveSingleRecord(
+      settings.googleSheetScriptUrl,
+      settings.secretToken,
+      action,
+      data
+    ).then(res => {
+      if (res.success) {
+        setSyncStatus('synced');
+        setLastSyncMessage(`Đã đồng bộ lúc ${new Date().toLocaleTimeString('vi-VN')}`);
+        updateSettings({ lastSyncedAt: new Date().toISOString() });
+      } else {
+        setSyncStatus('error');
+      }
+    }).catch(err => {
+      console.warn(`Lỗi tự động lưu ${action} lên Google Sheet:`, err);
+      setSyncStatus('error');
+    });
   };
 
   // ===================== CRUD CÂU LẠC BỘ =====================
@@ -164,12 +241,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     setClubs(prev => [...prev, newClub]);
     addToast(`Đã thêm câu lạc bộ: ${newClub.name}`, 'success');
+    triggerAutoSaveRecord('saveClub', newClub);
     return newClub;
   };
 
   const updateClub = (updatedClub: Club) => {
-    setClubs(prev => prev.map(c => c.id === updatedClub.id ? { ...updatedClub, updatedAt: new Date().toISOString() } : c));
+    const clubWithTime = { ...updatedClub, updatedAt: new Date().toISOString() };
+    setClubs(prev => prev.map(c => c.id === updatedClub.id ? clubWithTime : c));
     addToast(`Đã cập nhật CLB: ${updatedClub.name}`, 'success');
+    triggerAutoSaveRecord('saveClub', clubWithTime);
   };
 
   const deleteClub = (id: string) => {
@@ -194,12 +274,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     setExams(prev => [newExam, ...prev]);
     addToast(`Đã tạo đợt thi: ${newExam.name}`, 'success');
+    triggerAutoSaveRecord('saveExam', newExam);
     return newExam;
   };
 
   const updateExam = (updatedExam: ExamSession) => {
-    setExams(prev => prev.map(e => e.id === updatedExam.id ? { ...updatedExam, updatedAt: new Date().toISOString() } : e));
+    const examWithTime = { ...updatedExam, updatedAt: new Date().toISOString() };
+    setExams(prev => prev.map(e => e.id === updatedExam.id ? examWithTime : e));
     addToast(`Đã cập nhật đợt thi: ${updatedExam.name}`, 'success');
+    triggerAutoSaveRecord('saveExam', examWithTime);
   };
 
   const deleteExam = (id: string) => {
@@ -234,18 +317,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
 
     addToast('Đã đăng ký phiếu dự thi cho võ sinh', 'success');
+    triggerAutoSaveRecord('saveExamSheet', newSheet);
     return newSheet;
   };
 
   const updateExamSheet = (updatedSheet: ExamSheet) => {
-    setExamSheets(prev => prev.map(s => s.id === updatedSheet.id ? { ...updatedSheet, updatedAt: new Date().toISOString() } : s));
+    const sheetWithTime = { ...updatedSheet, updatedAt: new Date().toISOString() };
+    setExamSheets(prev => prev.map(s => s.id === updatedSheet.id ? sheetWithTime : s));
 
     // Cập nhật lại số lượng passedCandidates của kỳ thi
     const examId = updatedSheet.examId;
     setTimeout(() => {
       setExams(prev => prev.map(e => {
         if (e.id === examId) {
-          const relatedSheets = examSheets.map(s => s.id === updatedSheet.id ? updatedSheet : s).filter(s => s.examId === examId);
+          const relatedSheets = examSheets.map(s => s.id === updatedSheet.id ? sheetWithTime : s).filter(s => s.examId === examId);
           const passed = relatedSheets.filter(s => s.result === 'PASS' || s.result === 'DISTINCTION').length;
           return { ...e, totalCandidates: relatedSheets.length, passedCandidates: passed };
         }
@@ -254,6 +339,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }, 0);
 
     addToast('Đã cập nhật kết quả chấm điểm phiếu thi', 'success');
+    triggerAutoSaveRecord('saveExamSheet', sheetWithTime);
   };
 
   const deleteExamSheet = (id: string) => {
@@ -385,12 +471,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
 
     addToast(`Đã phát hành Văn bằng số: ${newCert.certNumber}`, 'success');
+    triggerAutoSaveRecord('saveCertificate', newCert);
     return newCert;
   };
 
   const updateCertificate = (updatedCert: Certificate) => {
-    setCertificates(prev => prev.map(c => c.id === updatedCert.id ? { ...updatedCert, updatedAt: new Date().toISOString() } : c));
+    const certWithTime = { ...updatedCert, updatedAt: new Date().toISOString() };
+    setCertificates(prev => prev.map(c => c.id === updatedCert.id ? certWithTime : c));
     addToast('Đã cập nhật thông tin văn bằng', 'success');
+    triggerAutoSaveRecord('saveCertificate', certWithTime);
   };
 
   const deleteCertificate = (id: string) => {
@@ -456,6 +545,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (newCerts.length > 0) {
       setCertificates(prev => [...newCerts, ...prev]);
+      newCerts.forEach(c => triggerAutoSaveRecord('saveCertificate', c));
       addToast(`Đã tự động tạo ${newCerts.length} Văn bằng thăng đai cho đợt thi!`, 'success');
     } else {
       addToast('Không có thí sinh thi đạt mới nào cần cấp văn bằng', 'info');
@@ -479,10 +569,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setSyncStatus('syncing');
     setLastSyncMessage('Đang tải dữ liệu lên Google Sheets...');
 
+    // Lấy dữ liệu mới nhất từ storage để đảm bảo không bị closure lag
+    const currentStudents = storageService.loadStudents();
+    const currentClubs = storageService.loadClubs();
+    const currentExams = storageService.loadExams();
+    const currentExamSheets = storageService.loadExamSheets();
+    const currentCerts = storageService.loadCertificates();
+
     const res = await googleSheetService.syncAllData(
       settings.googleSheetScriptUrl,
       settings.secretToken,
-      { clubs, students, exams, examSheets, certificates }
+      {
+        clubs: currentClubs.length > 0 ? currentClubs : clubs,
+        students: currentStudents.length > 0 ? currentStudents : students,
+        exams: currentExams.length > 0 ? currentExams : exams,
+        examSheets: currentExamSheets.length > 0 ? currentExamSheets : examSheets,
+        certificates: currentCerts.length > 0 ? currentCerts : certificates
+      }
     );
 
     if (res.success) {
@@ -511,12 +614,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const res = await googleSheetService.fetchAllData(
       settings.googleSheetScriptUrl,
-      settings.secretToken
+      settings.secretToken,
+      true
     );
 
     if (res.success && res.data) {
       if (res.data.clubs?.length) setClubs(res.data.clubs);
-      if (res.data.students?.length) setStudents(res.data.students);
+      const incomingStudents = res.data.students;
+      if (incomingStudents && incomingStudents.length > 0) {
+        setStudents(prev => {
+          const sheetIds = new Set(incomingStudents.map(s => s.id));
+          const localOnly = prev.filter(s => !sheetIds.has(s.id));
+          if (localOnly.length > 0) {
+            localOnly.forEach(st => triggerAutoSaveStudent(st));
+          }
+          return [...incomingStudents, ...localOnly];
+        });
+      }
       if (res.data.exams?.length) setExams(res.data.exams);
       if (res.data.examSheets?.length) setExamSheets(res.data.examSheets);
       if (res.data.certificates?.length) setCertificates(res.data.certificates);
@@ -532,6 +646,71 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return false;
     }
   };
+
+  // Tự động kiểm tra và đồng bộ dữ liệu mới nhất từ Google Sheets liên tục (Mobile & Web)
+  useEffect(() => {
+    if (!settings.googleSheetScriptUrl) return;
+
+    let isMounted = true;
+
+    const fetchLatestFromCloud = () => {
+      googleSheetService.fetchAllData(settings.googleSheetScriptUrl, settings.secretToken, false)
+        .then(res => {
+          if (!isMounted || !res.success || !res.data) return;
+
+          if (res.data.clubs?.length) setClubs(res.data.clubs);
+
+          const incomingStudents = res.data.students;
+          if (incomingStudents && incomingStudents.length > 0) {
+            setStudents(prev => {
+              const sheetIds = new Set(incomingStudents.map(s => s.id));
+              const localOnlyStudents = prev.filter(s => !sheetIds.has(s.id));
+
+              // Tự động đẩy bù các võ sinh vừa tạo cục bộ mà trên Google Sheet chưa có
+              if (localOnlyStudents.length > 0 && settings.googleSheetScriptUrl) {
+                localOnlyStudents.forEach(st => triggerAutoSaveStudent(st));
+              }
+
+              return [...incomingStudents, ...localOnlyStudents];
+            });
+          }
+
+          if (res.data.exams?.length) setExams(res.data.exams);
+          if (res.data.examSheets?.length) setExamSheets(res.data.examSheets);
+          if (res.data.certificates?.length) setCertificates(res.data.certificates);
+
+          setSyncStatus('synced');
+          setLastSyncMessage(`Đã đồng bộ với Google Sheets lúc ${new Date().toLocaleTimeString('vi-VN')}`);
+        })
+        .catch(err => {
+          console.warn('Lỗi tự động kéo dữ liệu Google Sheet:', err);
+        });
+    };
+
+    // 1. Kéo dữ liệu ngay khi mở app
+    fetchLatestFromCloud();
+
+    // 2. Kéo dữ liệu tự động khi người dùng chuyển lại tab hoặc mở màn hình điện thoại
+    const handleFocusOrVisible = () => {
+      if (document.visibilityState === 'visible') {
+        fetchLatestFromCloud();
+      }
+    };
+    window.addEventListener('focus', handleFocusOrVisible);
+    document.addEventListener('visibilitychange', handleFocusOrVisible);
+
+    // 3. Tự động kiểm tra đồng bộ trong nền mỗi 30 giây
+    const intervalId = setInterval(() => {
+      fetchLatestFromCloud();
+    }, 30000);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener('focus', handleFocusOrVisible);
+      document.removeEventListener('visibilitychange', handleFocusOrVisible);
+      clearInterval(intervalId);
+    };
+  }, [settings.googleSheetScriptUrl, settings.secretToken]);
 
   // ===================== QUẢN LÝ ĐIỂM DANH =====================
   const saveAttendanceBatch = (newRecords: AttendanceRecord[]) => {

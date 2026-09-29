@@ -9,7 +9,9 @@ import {
   Globe,
   LogOut,
   Check,
-  ShieldCheck
+  ShieldCheck,
+  RefreshCw,
+  Cloud
 } from 'lucide-react';
 
 interface UserMenuSidebarProps {
@@ -25,7 +27,7 @@ export const UserMenuSidebar: React.FC<UserMenuSidebarProps> = ({
 }) => {
   const { userName, userRole, logout } = useAuth();
   const { language, setLanguage, t } = useLanguage();
-  const { addToast } = useApp();
+  const { syncStatus, syncToGoogleSheet, lastSyncMessage, addToast } = useApp();
 
   // Đóng sidebar khi nhấn phím Escape
   useEffect(() => {
@@ -231,6 +233,38 @@ export const UserMenuSidebar: React.FC<UserMenuSidebarProps> = ({
                     )}
                   </button>
                 </div>
+              </div>
+
+              {/* MỤC 3: ĐỒNG BỘ DỮ LIỆU GOOGLE SHEETS */}
+              <div>
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-2 px-1">
+                  Đồng bộ Google Sheets
+                </span>
+                <button
+                  type="button"
+                  disabled={syncStatus === 'syncing'}
+                  onClick={async () => {
+                    await syncToGoogleSheet();
+                  }}
+                  className="w-full flex items-center justify-between p-3 rounded-2xl border border-slate-200/90 bg-white hover:bg-slate-50 transition-all cursor-pointer shadow-2xs active:scale-[0.98]"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${syncStatus === 'syncing' ? 'bg-blue-100 text-[#0072de]' : 'bg-emerald-50 text-emerald-600'}`}>
+                      <RefreshCw className={`w-4 h-4 ${syncStatus === 'syncing' ? 'animate-spin' : ''}`} />
+                    </div>
+                    <div className="text-left min-w-0">
+                      <div className="text-xs font-bold text-slate-800 truncate">
+                        {syncStatus === 'syncing' ? 'Đang đồng bộ...' : 'Đồng bộ Google Sheets'}
+                      </div>
+                      <span className="text-[10px] font-medium text-slate-400 block truncate">
+                        {lastSyncMessage || 'Tự động đồng bộ 2 chiều'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-[11px] font-bold text-[#0072de] bg-blue-50 px-2 py-1 rounded-lg border border-blue-100 shrink-0">
+                    Sync
+                  </div>
+                </button>
               </div>
             </div>
 

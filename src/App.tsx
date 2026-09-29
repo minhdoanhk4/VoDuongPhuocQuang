@@ -26,7 +26,8 @@ import {
   Search,
   Settings,
   User,
-  X
+  X,
+  RefreshCw
 } from 'lucide-react';
 
 export type AppView = 'home' | 'club-workspace' | 'quick-exam-creator' | 'videos' | 'certificates' | 'clubs' | 'exams';
@@ -551,6 +552,26 @@ const AppContent: React.FC = () => {
                         </div>
                       </div>
                     </div>
+
+                    {/* Nút Đồng bộ Google Sheets */}
+                    <button
+                      type="button"
+                      disabled={syncStatus === 'syncing'}
+                      onClick={async () => {
+                        await syncToGoogleSheet();
+                      }}
+                      className="w-full py-2.5 px-3 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold flex items-center justify-between transition-all cursor-pointer shadow-2xs active:scale-95"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${syncStatus === 'syncing' ? 'bg-blue-100 text-[#0072de]' : 'bg-emerald-50 text-emerald-600'}`}>
+                          <RefreshCw className={`w-3.5 h-3.5 ${syncStatus === 'syncing' ? 'animate-spin' : ''}`} />
+                        </div>
+                        <span>{syncStatus === 'syncing' ? (language === 'vi' ? 'Đang đồng bộ...' : 'Syncing...') : (language === 'vi' ? 'Đồng bộ Google Sheets' : 'Sync Google Sheets')}</span>
+                      </div>
+                      <span className="text-[10px] font-bold text-[#0072de] bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">
+                        Sync
+                      </span>
+                    </button>
 
                     {/* Nút Đăng xuất */}
                     <button

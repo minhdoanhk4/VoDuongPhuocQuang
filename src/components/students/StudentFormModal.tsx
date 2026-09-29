@@ -148,7 +148,7 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
     }
   };
 
-  // Tải ảnh thẻ 3x4 từ file máy / camera
+  // Tải ảnh thẻ 3x4 từ file máy / camera (Tự động nén kích thước chuẩn 3x4 để tối ưu Google Sheets và localStorage)
   const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -160,10 +160,40 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
 
     const reader = new FileReader();
     reader.onload = event => {
-      const dataUrl = event.target?.result as string;
-      if (dataUrl) {
-        setAvatarUrl(dataUrl);
-      }
+      const rawDataUrl = event.target?.result as string;
+      if (!rawDataUrl) return;
+
+      // Nén ảnh tỉ lệ 3:4 với kích thước 240x320 px (dưới 15KB) để tương thích an toàn 100% với Google Sheets
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 240;
+        canvas.height = 320;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          const targetRatio = 240 / 320;
+          const imgRatio = img.width / img.height;
+          let sx = 0, sy = 0, sWidth = img.width, sHeight = img.height;
+
+          if (imgRatio > targetRatio) {
+            sWidth = img.height * targetRatio;
+            sx = (img.width - sWidth) / 2;
+          } else {
+            sHeight = img.width / targetRatio;
+            sy = (img.height - sHeight) / 2;
+          }
+
+          ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, 240, 320);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.82);
+          setAvatarUrl(compressedDataUrl);
+        } else {
+          setAvatarUrl(rawDataUrl);
+        }
+      };
+      img.onerror = () => {
+        setAvatarUrl(rawDataUrl);
+      };
+      img.src = rawDataUrl;
     };
     reader.readAsDataURL(file);
   };

@@ -705,5 +705,11 @@ export const UI_DICTIONARY: Record<string, string> = {
   'Thêm thành công': 'Added Successfully',
   'Thiếu thông tin': 'Missing Information',
   'Nhập thông tin': 'Enter Information',
-  'Vui lòng chọn file hình ảnh hợp lệ!': 'Please select a valid image file!'
+  'Vui lòng chọn file hình ảnh hợp lệ!': 'Please select a valid image file!',
+  'Đồng bộ Google Sheets': 'Sync Google Sheets',
+  'Đồng bộ đám mây': 'Cloud Sync',
+  'Đồng bộ dữ liệu': 'Data Synchronization',
+  'Tự động đồng bộ 2 chiều': 'Two-way Auto Sync',
+  'Đang đồng bộ...': 'Syncing...',
+  'Đã đồng bộ với Google Sheets': 'Synced with Google Sheets'
 };
