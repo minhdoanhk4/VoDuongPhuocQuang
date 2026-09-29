@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { Plus, Building2 } from 'lucide-react';
 
 interface HomeClubGridViewProps {
@@ -15,6 +16,7 @@ export const HomeClubGridView: React.FC<HomeClubGridViewProps> = ({
   onOpenAddClub
 }) => {
   const { clubs, students } = useApp();
+  const { t, language } = useLanguage();
   const [isPlusHovered, setIsPlusHovered] = useState(false);
 
   // Thứ tự hiển thị chuẩn theo yêu cầu:
@@ -55,8 +57,8 @@ export const HomeClubGridView: React.FC<HomeClubGridViewProps> = ({
                 {club.name}
               </h3>
               <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-blue-50 border border-blue-200/60 text-xs sm:text-sm font-semibold text-[#0072de] transition-colors duration-200">
-                <span className="text-slate-600">Tổng:</span>
-                <span className="font-bold text-[#0072de]">{displayCount} Võ sinh</span>
+                <span className="text-slate-600">{t('total')}</span>
+                <span className="font-bold text-[#0072de]">{displayCount} {t('students')}</span>
               </div>
             </div>
           );
@@ -72,7 +74,7 @@ export const HomeClubGridView: React.FC<HomeClubGridViewProps> = ({
           }`}
         >
           <Building2 className="w-3.5 h-3.5 text-blue-400" />
-          <span className="whitespace-nowrap">Tạo CLB mới</span>
+          <span className="whitespace-nowrap">{language === 'vi' ? 'Tạo CLB mới' : 'Create new club'}</span>
           <div className="absolute top-1/2 -right-1 -translate-y-1/2 w-2 h-2 bg-slate-900 rotate-45" />
         </div>
 
@@ -82,7 +84,7 @@ export const HomeClubGridView: React.FC<HomeClubGridViewProps> = ({
           onMouseEnter={() => setIsPlusHovered(true)}
           onMouseLeave={() => setIsPlusHovered(false)}
           className="pointer-events-auto w-14 h-14 rounded-full bg-[#0072de] hover:bg-[#0060bd] active:scale-90 text-white shadow-lg shadow-blue-500/25 flex items-center justify-center cursor-pointer transition-all duration-200"
-          title="Tạo CLB mới"
+          title={language === 'vi' ? 'Tạo CLB mới' : 'Create new club'}
         >
           <Plus className="w-6 h-6 stroke-[2.5]" />
         </button>

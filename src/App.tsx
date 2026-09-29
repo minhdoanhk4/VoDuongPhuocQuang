@@ -13,12 +13,15 @@ import { SettingsModal } from './components/settings/SettingsModal';
 import { StudentFormModal } from './components/students/StudentFormModal';
 import { StudentDetailModal } from './components/students/StudentDetailModal';
 import { CertificatePreviewModal } from './components/certificates/CertificatePreviewModal';
+import { UserMenuSidebar } from './components/layout/UserMenuSidebar';
+import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { ToastContainer } from './components/ui/Toast';
 import { Student, BeltRank } from './types';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft,
   Home,
+  Menu,
   Search,
   Settings,
   User,
@@ -114,6 +117,7 @@ const pageVariants = {
 const AppContent: React.FC = () => {
   const { clubs, students, certificates, settings, syncStatus, syncToGoogleSheet } = useApp();
   const { isUnlocked, userRole, userName, logout } = useAuth();
+  const { t, language } = useLanguage();
 
   // Khôi phục URL route: nếu chưa đăng nhập hoặc vừa login, luôn luôn bắt đầu từ 'home'
   const initialRoute = React.useMemo(() => {
@@ -155,6 +159,7 @@ const AppContent: React.FC = () => {
   const [selectedBeltFilter, setSelectedBeltFilter] = useState<string>('ALL');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);
   const [isClubFormOpen, setIsClubFormOpen] = useState(false);
   const [workspaceSearchQuery, setWorkspaceSearchQuery] = useState('');
 
@@ -392,11 +397,11 @@ const AppContent: React.FC = () => {
             </button>
           )}
 
-          {/* 2. Nút Cài Đặt (Bánh răng) - Hiển thị ở Trang Chủ thay cho nút tìm kiếm */}
+          {/* 2. Nút Cài Đặt (Bánh răng) - BỎ TRÊN MOBILE (chỉ hiển thị trên Desktop md trở lên) */}
           {currentView === 'home' && (
             <button
               onClick={() => setIsSettingsOpen(true)}
-              className="p-2 sm:p-2.5 rounded-full text-slate-600 hover:text-[#0072de] hover:bg-slate-100 transition-all duration-200 cursor-pointer active:scale-95 animate-in fade-in duration-200"
+              className="hidden md:flex p-2 sm:p-2.5 rounded-full text-slate-600 hover:text-[#0072de] hover:bg-slate-100 transition-all duration-200 cursor-pointer active:scale-95 animate-in fade-in duration-200"
               title="Cài đặt hệ thống"
             >
               <Settings className="w-5 h-5" />
@@ -463,16 +468,28 @@ const AppContent: React.FC = () => {
             </div>
           )}
 
-          {/* 4. Icon User Avatar (Hover to open menu, hide when mouse leaves menu or icon) */}
+          {/* 4. Nút Menu 3 gạch ngang (Mobile) / User Avatar (Desktop) */}
+          {/* Mobile: 3 gạch ngang menu bấm mở sidebar trượt từ phải sang (áp dụng cho mọi trang từ home trở đi) */}
+          <button
+            type="button"
+            onClick={() => setIsRightSidebarOpen(true)}
+            className="md:hidden w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-100 hover:bg-slate-200 active:scale-90 flex items-center justify-center text-slate-700 transition-all duration-200 cursor-pointer shrink-0 shadow-2xs"
+            title="Menu hệ thống"
+            aria-label="Menu hệ thống"
+          >
+            <Menu className="w-5 h-5 text-slate-700 stroke-[2.2]" />
+          </button>
+
+          {/* Desktop: User Avatar (hover mở menu hoặc click mở sidebar trượt từ phải sang) */}
           <div
-            className="relative"
+            className="hidden md:block relative"
             onMouseEnter={handleProfileMouseEnter}
             onMouseLeave={handleProfileMouseLeave}
           >
             <button
-              onClick={() => setIsProfileOpen(prev => !prev)}
+              onClick={() => setIsRightSidebarOpen(true)}
               className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#0072de] hover:bg-[#0060bd] active:scale-95 flex items-center justify-center text-white shadow-xs transition-all duration-200 cursor-pointer shrink-0"
-              title="Tài khoản người dùng"
+              title="Tài khoản & Thiết lập"
             >
               <User className="w-5 h-5" />
             </button>
@@ -494,6 +511,15 @@ const AppContent: React.FC = () => {
                       <span className="w-2 h-2 rounded-full bg-emerald-500" />
                       <span className="text-xs font-bold text-slate-800">{userName || 'Quản trị viên'}</span>
                     </div>
+                    <button
+                      onClick={() => {
+                        setIsProfileOpen(false);
+                        setIsRightSidebarOpen(true);
+                      }}
+                      className="w-full py-2 px-3 rounded-2xl border border-blue-200 bg-blue-50/60 text-[#0072de] font-bold hover:bg-blue-100 text-xs transition-colors cursor-pointer block text-center"
+                    >
+                      Mở Menu &amp; Cài đặt
+                    </button>
                     <button
                       onClick={() => {
                         setIsProfileOpen(false);
@@ -702,6 +728,24 @@ const AppContent: React.FC = () => {
         onClose={() => setIsClubFormOpen(false)}
       />
 
+      {/* Right Slide-in Menu Sidebar (Mobile & Desktop) */}
+      <UserMenuSidebar
+        isOpen={isRightSidebarOpen}
+        onClose={() => setIsRightSidebarOpen(false)}
+        onNavigateHome={() => {
+          setCurrentView('home');
+          setSelectedClubId('clb-pq1');
+          setCurrentClubTab('overview');
+          setCurrentAttendanceSubPage('taking');
+          window.location.hash = '#/';
+          try {
+            localStorage.setItem('pqq_last_route', '#/');
+          } catch {
+            // ignore
+          }
+        }}
+      />
+
       {/* Global Toast Container */}
       <ToastContainer />
     </div>
@@ -711,9 +755,11 @@ const AppContent: React.FC = () => {
 export const App: React.FC = () => {
   return (
     <AuthProvider>
-      <AppProvider>
-        <AppContent />
-      </AppProvider>
+      <LanguageProvider>
+        <AppProvider>
+          <AppContent />
+        </AppProvider>
+      </LanguageProvider>
     </AuthProvider>
   );
 };
