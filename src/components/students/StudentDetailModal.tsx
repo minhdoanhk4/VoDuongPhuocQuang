@@ -226,7 +226,7 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                 <div>
                   <span className="font-medium text-slate-600">Đai đẳng: </span>
                   <strong className="font-bold" style={{ color: beltConfig.borderHex }}>
-                    {beltConfig.name} {toRoman(student.currentBeltLevel)}
+                    {student.currentBelt === 'NAU_DAI' ? 'Nâu Đai (Cấp 0)' : `${beltConfig.name} ${toRoman(student.currentBeltLevel)}`}
                   </strong>
                 </div>
               </div>
@@ -268,7 +268,7 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
             <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-slate-200/60">
               <span className="text-slate-500 font-medium shrink-0">- Đai đẳng:</span>
               <strong className="font-bold text-right" style={{ color: beltConfig.borderHex }}>
-                {beltConfig.name} {toRoman(student.currentBeltLevel)}
+                {student.currentBelt === 'NAU_DAI' ? 'Nâu Đai (Cấp 0)' : `${beltConfig.name} ${toRoman(student.currentBeltLevel)}`}
               </strong>
             </div>
 

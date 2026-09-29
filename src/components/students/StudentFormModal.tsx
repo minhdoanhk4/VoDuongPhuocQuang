@@ -21,7 +21,7 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
 }) => {
   const { clubs, addStudent, updateStudent, addToast } = useApp();
 
-  // Quản lý 2 bước: 1 = Thông tin cá nhân, 2 = Thông tin cấp đai
+  // 2 bước rõ ràng: 1 = Thông tin cá nhân, 2 = Thông tin cấp đai
   const [step, setStep] = useState<1 | 2>(1);
 
   // PHẦN I: THÔNG TIN CÁ NHÂN
@@ -35,15 +35,20 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
   const [phone, setPhone] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
 
-  // PHẦN II: THÔNG TIN CẤP ĐAI & MÔN PHÁI
-  const [currentBelt, setCurrentBelt] = useState<BeltRank>('LAM_DAI');
-  const [currentBeltLevel, setCurrentBeltLevel] = useState<number>(1);
+  // PHẦN II: THÔNG TIN CẤP ĐAI
+  const [currentBelt, setCurrentBelt] = useState<BeltRank>('NAU_DAI');
+  const [currentBeltLevel, setCurrentBeltLevel] = useState<number>(0);
   const [clubId, setClubId] = useState(clubs[0]?.id || '');
   const [unitName, setUnitName] = useState('');
   const [coachName, setCoachName] = useState('');
   const [joinDate, setJoinDate] = useState(new Date().toISOString().split('T')[0]);
   const [status, setStatus] = useState<StudentStatus>('ACTIVE');
   const [code, setCode] = useState('');
+
+  // Thông tin văn bằng (chỉ áp dụng từ Lam Đai 1 trở lên, Cấp 0 Nâu Đai không nhập)
+  const [diplomaIssueDate, setDiplomaIssueDate] = useState('');
+  const [diplomaIssuePlace, setDiplomaIssuePlace] = useState('Bà Rịa - Vũng Tàu');
+  const [diplomaIssuingAuthority, setDiplomaIssuingAuthority] = useState('Môn Phái Phật Quang Quyền');
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -64,14 +69,24 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
       setWeight(studentToEdit.weight || '');
       setAvatarUrl(studentToEdit.avatarUrl || '');
 
+      const sBelt = studentToEdit.currentBelt || 'NAU_DAI';
+      setCurrentBelt(sBelt);
+      if (sBelt === 'NAU_DAI') {
+        setCurrentBeltLevel(0);
+      } else {
+        setCurrentBeltLevel(studentToEdit.currentBeltLevel !== undefined ? Number(studentToEdit.currentBeltLevel) : 1);
+      }
+
       setClubId(studentToEdit.clubId || clubs[0]?.id || '');
       const club = clubs.find(c => c.id === (studentToEdit.clubId || clubs[0]?.id));
       setUnitName(studentToEdit.unitName || club?.name || '');
-      setCurrentBelt(studentToEdit.currentBelt || 'LAM_DAI');
-      setCurrentBeltLevel(studentToEdit.currentBeltLevel || 1);
       setCoachName(studentToEdit.coachName || club?.coach || '');
       setJoinDate(studentToEdit.joinDate || new Date().toISOString().split('T')[0]);
       setStatus(studentToEdit.status || 'ACTIVE');
+
+      setDiplomaIssueDate(studentToEdit.diplomaIssueDate || '');
+      setDiplomaIssuePlace(studentToEdit.diplomaIssuePlace || 'Bà Rịa - Vũng Tàu');
+      setDiplomaIssuingAuthority(studentToEdit.diplomaIssuingAuthority || 'Môn Phái Phật Quang Quyền');
     } else {
       setFullName('');
       const targetClub = defaultClubId ? clubs.find(c => c.id === defaultClubId) : clubs[0];
@@ -87,19 +102,25 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
       setWeight('');
       setAvatarUrl('');
 
+      const initBelt = defaultBelt || 'NAU_DAI';
+      setCurrentBelt(initBelt);
+      setCurrentBeltLevel(initBelt === 'NAU_DAI' ? 0 : 1);
+
       setClubId(defaultClubId || clubs[0]?.id || '');
       setUnitName(targetClub?.name || '');
-      setCurrentBelt(defaultBelt || 'LAM_DAI');
-      setCurrentBeltLevel(1);
       setCoachName(targetClub?.coach || '');
       setJoinDate(new Date().toISOString().split('T')[0]);
       setStatus('ACTIVE');
+
+      setDiplomaIssueDate(new Date().toISOString().split('T')[0]);
+      setDiplomaIssuePlace(targetClub?.address.includes('Đồng Nai') ? 'Đồng Nai' : 'Bà Rịa - Vũng Tàu');
+      setDiplomaIssuingAuthority('Môn Phái Phật Quang Quyền');
     }
   }, [studentToEdit, defaultClubId, defaultBelt, clubs, isOpen]);
 
   if (!isOpen) return null;
 
-  // Xử lý chọn CLB tự cập nhật Đơn vị và HLV
+  // Xử lý chọn CLB
   const handleClubChange = (id: string) => {
     setClubId(id);
     const club = clubs.find(c => c.id === id);
@@ -109,7 +130,25 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
     }
   };
 
-  // Xử lý tải ảnh thẻ 3x4 từ thiết bị
+  // Xử lý chọn Cấp đai
+  const handleBeltSelect = (b: BeltRank) => {
+    setCurrentBelt(b);
+    if (b === 'NAU_DAI') {
+      setCurrentBeltLevel(0);
+      setDiplomaIssueDate('');
+      setDiplomaIssuePlace('');
+      setDiplomaIssuingAuthority('');
+    } else {
+      if (currentBeltLevel === 0) {
+        setCurrentBeltLevel(1);
+      }
+      if (!diplomaIssuePlace) setDiplomaIssuePlace('Bà Rịa - Vũng Tàu');
+      if (!diplomaIssuingAuthority) setDiplomaIssuingAuthority('Môn Phái Phật Quang Quyền');
+      if (!diplomaIssueDate) setDiplomaIssueDate(new Date().toISOString().split('T')[0]);
+    }
+  };
+
+  // Tải ảnh thẻ 3x4 từ file máy / camera
   const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -139,7 +178,7 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
   // Điều kiện để nút Xác nhận Phần I sáng lên
   const isStep1Valid = fullName.trim().length > 0 && String(birthYear).trim().length > 0;
 
-  // Điều kiện Phần II: Đã có đủ thông tin mặc định
+  // Điều kiện Phần II
   const isStep2Valid = isStep1Valid && clubId.trim().length > 0;
 
   // Lưu thông tin võ sinh
@@ -149,17 +188,24 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
       return;
     }
 
-    const bBelt = useDefaultsForBelt ? (defaultBelt || 'LAM_DAI') : currentBelt;
-    const bLevel = useDefaultsForBelt ? 1 : Number(currentBeltLevel) || 1;
+    const bBelt = useDefaultsForBelt ? (defaultBelt || 'NAU_DAI') : currentBelt;
+    const bLevel = useDefaultsForBelt ? (bBelt === 'NAU_DAI' ? 0 : 1) : (bBelt === 'NAU_DAI' ? 0 : Number(currentBeltLevel) || 1);
     const bClubId = useDefaultsForBelt ? (defaultClubId || clubs[0]?.id || '') : clubId;
     const targetClub = clubs.find(c => c.id === bClubId);
     const bUnitName = useDefaultsForBelt ? (targetClub?.name || '') : unitName.trim() || (targetClub?.name || '');
     const bCoach = useDefaultsForBelt ? (targetClub?.coach || '') : coachName.trim() || (targetClub?.coach || '');
 
     const beltCfg = getBeltConfig(bBelt);
-    const diplomaName = `${beltCfg.name} Cấp ${bLevel}`;
+    const diplomaName = bBelt === 'NAU_DAI' ? 'Nâu Đai (Cấp 0)' : `${beltCfg.name} Cấp ${bLevel}`;
     const numHeight = height !== '' && !isNaN(Number(height)) ? Number(height) : undefined;
     const numWeight = weight !== '' && !isNaN(Number(weight)) ? Number(weight) : undefined;
+
+    // Cấp 0 Nâu Đai không lưu thông tin ngày cấp, nơi cấp, cơ quan cấp
+    const isLevelZero = bBelt === 'NAU_DAI' || bLevel === 0;
+
+    const finalIssueDate = isLevelZero ? undefined : (diplomaIssueDate || undefined);
+    const finalIssuePlace = isLevelZero ? undefined : (diplomaIssuePlace.trim() || undefined);
+    const finalIssuingAuth = isLevelZero ? undefined : (diplomaIssuingAuthority.trim() || undefined);
 
     if (studentToEdit) {
       updateStudent({
@@ -178,6 +224,9 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
         currentBelt: bBelt,
         currentBeltLevel: bLevel,
         diplomaName,
+        diplomaIssueDate: finalIssueDate,
+        diplomaIssuePlace: finalIssuePlace,
+        diplomaIssuingAuthority: finalIssuingAuth,
         coachName: bCoach,
         avatarUrl: avatarUrl.trim() || undefined,
         joinDate,
@@ -201,6 +250,9 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
         currentBelt: bBelt,
         currentBeltLevel: bLevel,
         diplomaName,
+        diplomaIssueDate: finalIssueDate,
+        diplomaIssuePlace: finalIssuePlace,
+        diplomaIssuingAuthority: finalIssuingAuth,
         coachName: bCoach,
         avatarUrl: avatarUrl.trim() || undefined,
         joinDate,
@@ -213,6 +265,7 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
   };
 
   const selectedBeltConfig = getBeltConfig(currentBelt);
+  const isBrownBeltLevelZero = currentBelt === 'NAU_DAI' || currentBeltLevel === 0;
 
   return (
     <div
@@ -467,7 +520,7 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
           {/* ============================================================== */}
           {step === 2 && (
             <div className="space-y-4 animate-in fade-in duration-200">
-              {/* CHỌN CẤP ĐAI TRỰC QUAN */}
+              {/* CHỌN CẤP ĐAI TRỰC QUAN (BAO GỒM NÂU ĐAI CẤP 0 VÀ CÁC ĐAI TRÊN) */}
               <div>
                 <label className="block text-xs font-bold text-slate-800 mb-1.5">
                   Cấp đai
@@ -480,22 +533,19 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
                       <button
                         type="button"
                         key={b}
-                        onClick={() => {
-                          setCurrentBelt(b);
-                          setCurrentBeltLevel(1);
-                        }}
+                        onClick={() => handleBeltSelect(b)}
                         className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center gap-2 ${
                           isSelected
-                            ? 'border-[#0072de] bg-blue-50/70 shadow-xs'
+                            ? 'border-[#0072de] bg-blue-50/70 shadow-xs ring-1 ring-[#0072de]'
                             : 'border-slate-200 hover:border-slate-300 bg-white'
                         }`}
                       >
                         <span
-                          className="w-3.5 h-3.5 rounded-full shrink-0 shadow-2xs"
+                          className="w-3.5 h-3.5 rounded-full shrink-0 shadow-2xs border border-black/10"
                           style={{ backgroundColor: cfg.bgHex }}
                         />
                         <span className="text-xs font-bold text-slate-800 truncate">
-                          {cfg.name}
+                          {b === 'NAU_DAI' ? 'Nâu Đai (Cấp 0)' : cfg.name}
                         </span>
                       </button>
                     );
@@ -509,17 +559,27 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
                   <label className="block text-xs font-bold text-slate-800 mb-1">
                     Cấp / Gạch
                   </label>
-                  <select
-                    value={currentBeltLevel}
-                    onChange={e => setCurrentBeltLevel(Number(e.target.value))}
-                    className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm font-bold focus:border-[#0072de] focus:ring-2 focus:ring-blue-100 focus:outline-none bg-white text-slate-900 transition-all"
-                  >
-                    {Array.from({ length: selectedBeltConfig.maxLevels }, (_, i) => i + 1).map(l => (
-                      <option key={l} value={l}>
-                        Cấp {l}
-                      </option>
-                    ))}
-                  </select>
+                  {currentBelt === 'NAU_DAI' ? (
+                    <select
+                      value={0}
+                      disabled
+                      className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm font-bold bg-slate-50 text-slate-700 cursor-not-allowed"
+                    >
+                      <option value={0}>Cấp 0 (Nhập môn)</option>
+                    </select>
+                  ) : (
+                    <select
+                      value={currentBeltLevel}
+                      onChange={e => setCurrentBeltLevel(Number(e.target.value))}
+                      className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm font-bold focus:border-[#0072de] focus:ring-2 focus:ring-blue-100 focus:outline-none bg-white text-slate-900 transition-all"
+                    >
+                      {Array.from({ length: selectedBeltConfig.maxLevels }, (_, i) => i + 1).map(l => (
+                        <option key={l} value={l}>
+                          Cấp {l}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
 
                 <div>
@@ -568,6 +628,56 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
                 </div>
               </div>
 
+              {/* THÔNG TIN VĂN BẰNG (CHỈ TỪ LAM ĐAI 1 TRỞ LÊN, CẤP 0 NÂU ĐAI HOÀN TOÀN ẨN) */}
+              {!isBrownBeltLevelZero && (
+                <div className="p-3.5 bg-blue-50/50 rounded-2xl border border-blue-200/80 space-y-3 animate-in fade-in duration-150">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-[#0072de]">
+                    <Award className="w-4 h-4" />
+                    <span>Thông tin văn bằng chứng nhận</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Ngày cấp
+                      </label>
+                      <input
+                        type="date"
+                        value={diplomaIssueDate}
+                        onChange={e => setDiplomaIssueDate(e.target.value)}
+                        className="w-full px-2.5 py-2 rounded-xl border border-slate-300 bg-white text-xs font-medium focus:border-[#0072de] focus:ring-2 focus:ring-blue-100 focus:outline-none text-slate-900"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Nơi cấp
+                      </label>
+                      <input
+                        type="text"
+                        value={diplomaIssuePlace}
+                        onChange={e => setDiplomaIssuePlace(e.target.value)}
+                        placeholder="Bà Rịa - Vũng Tàu"
+                        className="w-full px-2.5 py-2 rounded-xl border border-slate-300 bg-white text-xs font-medium focus:border-[#0072de] focus:ring-2 focus:ring-blue-100 focus:outline-none text-slate-900"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Cơ quan cấp
+                      </label>
+                      <input
+                        type="text"
+                        value={diplomaIssuingAuthority}
+                        onChange={e => setDiplomaIssuingAuthority(e.target.value)}
+                        placeholder="Môn Phái Phật Quang Quyền"
+                        className="w-full px-2.5 py-2 rounded-xl border border-slate-300 bg-white text-xs font-medium focus:border-[#0072de] focus:ring-2 focus:ring-blue-100 focus:outline-none text-slate-900"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* TRẠNG THÁI SINH HOẠT */}
               <div>
                 <label className="block text-xs font-bold text-slate-800 mb-1">
@@ -589,11 +699,11 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
         </div>
 
         {/* ============================================================== */}
-        {/* FOOTER ACTIONS: NÚT XÁC NHẬN / BỎ QUA THEO YÊU CẦU NGƯỜI DÙNG  */}
+        {/* FOOTER ACTIONS: NÚT XÁC NHẬN / BỎ QUA                          */}
         {/* ============================================================== */}
         <div className="px-5 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0">
           {step === 1 ? (
-            /* Ở PHẦN 1: CÓ NÚT XÁC NHẬN BÊN DƯỚI ĐỂ SANG PHẦN 2, SÁNG LÊN KHI CÓ DỮ LIỆU */
+            /* Ở PHẦN 1: NÚT XÁC NHẬN SÁNG LÊN KHI CÓ DỮ LIỆU ĐỂ SANG BƯỚC 2 */
             <>
               <button
                 type="button"
@@ -618,7 +728,7 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
               </button>
             </>
           ) : (
-            /* Ở PHẦN 2: CÓ NÚT XÁC NHẬN VÀ NÚT BỎ QUA */
+            /* Ở PHẦN 2: NÚT XÁC NHẬN VÀ NÚT BỎ QUA */
             <>
               <button
                 type="button"
@@ -630,17 +740,17 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
               </button>
 
               <div className="flex items-center gap-2">
-                {/* Nút Bỏ qua: lưu ngay với đai & CLB mặc định */}
+                {/* Nút Bỏ qua: lưu ngay với đai mặc định (Nâu Đai Cấp 0) */}
                 <button
                   type="button"
                   onClick={() => saveStudentData(true)}
                   className="px-4 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs sm:text-sm font-bold transition-all cursor-pointer"
-                  title="Bỏ qua phần cấp đai và lưu với cấp đai mặc định"
+                  title="Bỏ qua phần cấp đai và lưu với cấp 0 Nâu Đai mặc định"
                 >
                   Bỏ qua
                 </button>
 
-                {/* Nút Xác nhận: lưu toàn bộ thông tin */}
+                {/* Nút Xác nhận: lưu đầy đủ thông tin Phần I + Phần II */}
                 <button
                   type="button"
                   disabled={!isStep2Valid}

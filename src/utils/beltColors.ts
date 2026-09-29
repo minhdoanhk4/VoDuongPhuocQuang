@@ -1,6 +1,7 @@
 import { BeltRank, BELT_CONFIGS } from '../types';
 
 export const BELT_ORDER: BeltRank[] = [
+  'NAU_DAI',
   'LAM_DAI',
   'LUC_DAI',
   'HONG_DAI',
@@ -12,10 +13,11 @@ export const BELT_ORDER: BeltRank[] = [
  * Trả về thông tin đầy đủ của cấp đai
  */
 export function getBeltConfig(belt: BeltRank) {
-  return BELT_CONFIGS[belt] || BELT_CONFIGS.LAM_DAI;
+  return BELT_CONFIGS[belt] || BELT_CONFIGS.NAU_DAI;
 }
 
 const BELT_ENGLISH_NAMES: Record<BeltRank, string> = {
+  NAU_DAI: 'Brown Belt',
   LAM_DAI: 'Blue Belt',
   LUC_DAI: 'Green Belt',
   HONG_DAI: 'Red Belt',
@@ -24,13 +26,16 @@ const BELT_ENGLISH_NAMES: Record<BeltRank, string> = {
 };
 
 /**
- * Trả về tên hiển thị kèm cấp/gạch (Ví dụ: Lam Đai cấp 2, Bạch Đai)
+ * Trả về tên hiển thị kèm cấp/gạch (Ví dụ: Nâu Đai Cấp 0, Lam Đai cấp 2, Bạch Đai)
  * Tự động đồng bộ song ngữ Việt - Anh
  */
 export function formatBeltWithLevel(belt: BeltRank, level: number = 1): string {
   const isEn = typeof window !== 'undefined' && localStorage.getItem('pqq_preferred_language') === 'en';
   if (isEn) {
     const enName = BELT_ENGLISH_NAMES[belt] || 'Belt';
+    if (belt === 'NAU_DAI') {
+      return level === 0 ? 'Brown Belt (Level 0)' : 'Brown Belt';
+    }
     if (belt === 'BACH_DAI') {
       return level > 1 ? `White Belt (${level}th Dan)` : 'White Belt';
     }
@@ -38,6 +43,9 @@ export function formatBeltWithLevel(belt: BeltRank, level: number = 1): string {
   }
 
   const config = getBeltConfig(belt);
+  if (belt === 'NAU_DAI') {
+    return level === 0 ? 'Nâu Đai (Cấp 0)' : 'Nâu Đai';
+  }
   if (belt === 'BACH_DAI') {
     return level > 1 ? `Bạch Đai (Đẳng ${level})` : 'Bạch Đai';
   }
@@ -48,6 +56,14 @@ export function formatBeltWithLevel(belt: BeltRank, level: number = 1): string {
  * Xác định cấp đai tiếp theo khi thi thăng đai
  */
 export function getNextBeltRank(currentBelt: BeltRank, currentLevel: number = 1): { belt: BeltRank; level: number } {
+  // Nếu là Nâu Đai (Cấp 0) -> thi lên Lam Đai Cấp 1
+  if (currentBelt === 'NAU_DAI') {
+    return {
+      belt: 'LAM_DAI',
+      level: 1
+    };
+  }
+
   const currentConfig = getBeltConfig(currentBelt);
   
   // Nếu chưa đạt cấp tối đa của đai hiện tại -> Tăng lên 1 cấp
@@ -80,6 +96,14 @@ export function getNextBeltRank(currentBelt: BeltRank, currentLevel: number = 1)
  */
 export function getBeltBadgeStyle(belt: BeltRank) {
   switch (belt) {
+    case 'NAU_DAI':
+      return {
+        bg: 'bg-amber-100 text-amber-950 border-amber-300 hover:bg-amber-200/80',
+        dot: 'bg-[#78350f]',
+        gradient: 'from-amber-800 to-amber-950',
+        border: 'border-amber-900',
+        accentColor: '#78350f'
+      };
     case 'LAM_DAI':
       return {
         bg: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100',

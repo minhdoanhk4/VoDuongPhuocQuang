@@ -4,23 +4,36 @@
  * 5 Bậc Cấp Đai Môn Phái Phật Quang Quyền
  * Thứ bậc: Lam Đai -> Lục Đai -> Hồng Đai -> Hoàng Đai -> Bạch Đai
  */
-export type BeltRank = 'LAM_DAI' | 'LUC_DAI' | 'HONG_DAI' | 'HOANG_DAI' | 'BACH_DAI';
+export type BeltRank = 'NAU_DAI' | 'LAM_DAI' | 'LUC_DAI' | 'HONG_DAI' | 'HOANG_DAI' | 'BACH_DAI';
 
 export interface BeltConfig {
   id: BeltRank;
-  name: string; // Tên hiển thị: Lam Đai, Lục Đai, Hồng Đai, Hoàng Đai, Bạch Đai
+  name: string; // Tên hiển thị: Nâu Đai, Lam Đai, Lục Đai, Hồng Đai, Hoàng Đai, Bạch Đai
   vietnameseName: string;
-  order: number; // 1 to 5
+  order: number; // 0 to 5
   colorClass: string; // Tailwind background / text
   bgHex: string;
   textHex: string;
   borderHex: string;
   badgeBg: string;
-  maxLevels: number; // Số cấp/gạch trong đai (ví dụ 1, 2, 3)
+  maxLevels: number; // Số cấp/gạch trong đai (ví dụ 0, 1, 2, 3)
   description: string;
 }
 
 export const BELT_CONFIGS: Record<BeltRank, BeltConfig> = {
+  NAU_DAI: {
+    id: 'NAU_DAI',
+    name: 'Nâu Đai',
+    vietnameseName: 'Đai Nâu (Cấp 0 - Nhập Môn)',
+    order: 0,
+    colorClass: 'bg-amber-900 text-white',
+    bgHex: '#78350f',
+    textHex: '#ffffff',
+    borderHex: '#451a03',
+    badgeBg: 'bg-amber-100 text-amber-950 border-amber-300 font-semibold',
+    maxLevels: 0,
+    description: 'Cấp đai nhập môn khởi đầu (Cấp 0), rèn luyện tư cách môn sinh và những bài học căn bản đầu tiên.'
+  },
   LAM_DAI: {
     id: 'LAM_DAI',
     name: 'Lam Đai',

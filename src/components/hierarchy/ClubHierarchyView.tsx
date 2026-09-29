@@ -18,6 +18,7 @@ export const ClubHierarchyView: React.FC<ClubHierarchyViewProps> = ({
   const { clubs, students } = useApp();
   const [selectedClubId, setSelectedClubId] = useState<string>(clubs[0]?.id || '');
   const [expandedBelts, setExpandedBelts] = useState<Record<BeltRank, boolean>>({
+    NAU_DAI: true,
     LAM_DAI: true,
     LUC_DAI: true,
     HONG_DAI: true,

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { AttendanceRecord, AttendanceStatus, Student } from '../../types';
-import { getBeltConfig, getBeltBadgeStyle } from '../../utils/beltColors';
+import { getBeltConfig, getBeltBadgeStyle, BELT_ORDER } from '../../utils/beltColors';
 import { formatDateVN, formatStudentClubCode } from '../../utils/formatters';
 import {
   Check,
@@ -608,10 +608,9 @@ ${absentListStr}
         targetBeltName = `${currentCfg.name} Cấp ${currentLevel + 1}`;
         targetBeltLevel = currentLevel + 1;
       } else {
-        const BELT_ORDER_RANKS = ['LAM_DAI', 'LUC_DAI', 'HONG_DAI', 'HOANG_DAI', 'BACH_DAI'];
-        const cIdx = BELT_ORDER_RANKS.indexOf(student.currentBelt);
-        if (cIdx >= 0 && cIdx < BELT_ORDER_RANKS.length - 1) {
-          targetBeltRank = BELT_ORDER_RANKS[cIdx + 1] as any;
+        const cIdx = BELT_ORDER.indexOf(student.currentBelt);
+        if (cIdx >= 0 && cIdx < BELT_ORDER.length - 1) {
+          targetBeltRank = BELT_ORDER[cIdx + 1];
           const nextCfg = getBeltConfig(targetBeltRank);
           targetBeltLevel = 1;
           targetBeltName = `${nextCfg.name} Cấp 1`;
