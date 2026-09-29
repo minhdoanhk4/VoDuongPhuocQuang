@@ -44,6 +44,7 @@ import {
   Home,
   MoreHorizontal,
   History,
+  TrendingUp,
   X
 } from 'lucide-react';
 
@@ -54,8 +55,8 @@ interface ClubWorkspaceViewProps {
   searchQuery?: string;
   initialTab?: ClubWorkspaceTab;
   onTabChange?: (tab: ClubWorkspaceTab) => void;
-  initialAttendanceSubPage?: 'taking' | 'history';
-  onAttendanceSubPageChange?: (subPage: 'taking' | 'history') => void;
+  initialAttendanceSubPage?: 'taking' | 'history' | 'report';
+  onAttendanceSubPageChange?: (subPage: 'taking' | 'history' | 'report') => void;
   onBackToHome: () => void;
   onOpenAddStudent: (clubId?: string, belt?: BeltRank) => void;
   onOpenEditStudent: (student: Student) => void;
@@ -350,7 +351,7 @@ export const ClubWorkspaceView: React.FC<ClubWorkspaceViewProps> = ({
       {/* ============================================================== */}
       {/* 2. KHU VỰC NỘI DUNG CHÍNH (TỰ ĐỘNG CO DÃN 16:9 THEO SIDEBAR)  */}
       {/* ============================================================== */}
-      <main className="flex-1 min-w-0 h-full overflow-y-auto p-3 sm:p-4 lg:p-5 pb-36 md:pb-5 relative w-full transition-all duration-300">
+      <main className="flex-1 min-w-0 h-full overflow-y-auto overflow-x-hidden p-3 sm:p-4 lg:p-5 pb-36 md:pb-5 relative w-full transition-all duration-300">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
@@ -1132,14 +1133,14 @@ export const ClubWorkspaceView: React.FC<ClubWorkspaceViewProps> = ({
         <button
           type="button"
           onClick={() => handleTabChange('overview')}
-          className={`flex-1 py-1.5 px-1 flex flex-col items-center justify-center rounded-2xl transition-all cursor-pointer active:scale-95 ${
+          className={`flex-1 py-1.5 px-0.5 flex flex-col items-center justify-center rounded-2xl transition-all cursor-pointer active:scale-95 ${
             activeTab === 'overview'
               ? 'text-[#0072de] bg-blue-50/90 font-bold'
               : 'text-slate-500 hover:text-slate-800 font-medium'
           }`}
         >
           <LayoutDashboard className={`w-5 h-5 ${activeTab === 'overview' ? 'stroke-[2.5]' : 'stroke-[1.8]'}`} />
-          <span className="text-[10.5px] mt-0.5 tracking-tight">
+          <span className="text-[10px] mt-0.5 tracking-tight truncate">
             Tổng quan
           </span>
         </button>
@@ -1148,14 +1149,14 @@ export const ClubWorkspaceView: React.FC<ClubWorkspaceViewProps> = ({
         <button
           type="button"
           onClick={() => handleTabChange('students')}
-          className={`flex-1 py-1.5 px-1 flex flex-col items-center justify-center rounded-2xl transition-all cursor-pointer active:scale-95 ${
+          className={`flex-1 py-1.5 px-0.5 flex flex-col items-center justify-center rounded-2xl transition-all cursor-pointer active:scale-95 ${
             activeTab === 'students'
               ? 'text-[#0072de] bg-blue-50/90 font-bold'
               : 'text-slate-500 hover:text-slate-800 font-medium'
           }`}
         >
           <Users className={`w-5 h-5 ${activeTab === 'students' ? 'stroke-[2.5]' : 'stroke-[1.8]'}`} />
-          <span className="text-[10.5px] mt-0.5 tracking-tight">
+          <span className="text-[10px] mt-0.5 tracking-tight truncate">
             Danh sách
           </span>
         </button>
@@ -1167,14 +1168,14 @@ export const ClubWorkspaceView: React.FC<ClubWorkspaceViewProps> = ({
             handleTabChange('attendance');
             onAttendanceSubPageChange?.('taking');
           }}
-          className={`flex-1 py-1.5 px-1 flex flex-col items-center justify-center rounded-2xl transition-all cursor-pointer active:scale-95 ${
-            activeTab === 'attendance' && attendanceSubPage !== 'history'
+          className={`flex-1 py-1.5 px-0.5 flex flex-col items-center justify-center rounded-2xl transition-all cursor-pointer active:scale-95 ${
+            activeTab === 'attendance' && attendanceSubPage === 'taking'
               ? 'text-[#0072de] bg-blue-50/90 font-bold'
               : 'text-slate-500 hover:text-slate-800 font-medium'
           }`}
         >
-          <CalendarCheck className={`w-5 h-5 ${activeTab === 'attendance' && attendanceSubPage !== 'history' ? 'stroke-[2.5]' : 'stroke-[1.8]'}`} />
-          <span className="text-[10.5px] mt-0.5 tracking-tight">
+          <CalendarCheck className={`w-5 h-5 ${activeTab === 'attendance' && attendanceSubPage === 'taking' ? 'stroke-[2.5]' : 'stroke-[1.8]'}`} />
+          <span className="text-[10px] mt-0.5 tracking-tight truncate">
             Điểm danh
           </span>
         </button>
@@ -1186,15 +1187,34 @@ export const ClubWorkspaceView: React.FC<ClubWorkspaceViewProps> = ({
             handleTabChange('attendance');
             onAttendanceSubPageChange?.('history');
           }}
-          className={`flex-1 py-1.5 px-1 flex flex-col items-center justify-center rounded-2xl transition-all cursor-pointer active:scale-95 ${
+          className={`flex-1 py-1.5 px-0.5 flex flex-col items-center justify-center rounded-2xl transition-all cursor-pointer active:scale-95 ${
             activeTab === 'attendance' && attendanceSubPage === 'history'
               ? 'text-[#0072de] bg-blue-50/90 font-bold'
               : 'text-slate-500 hover:text-slate-800 font-medium'
           }`}
         >
           <History className={`w-5 h-5 ${activeTab === 'attendance' && attendanceSubPage === 'history' ? 'stroke-[2.5]' : 'stroke-[1.8]'}`} />
-          <span className="text-[10.5px] mt-0.5 tracking-tight">
+          <span className="text-[10px] mt-0.5 tracking-tight truncate">
             Lịch sử
+          </span>
+        </button>
+
+        {/* Tab 5: Báo cáo (Báo cáo chuyên cần) */}
+        <button
+          type="button"
+          onClick={() => {
+            handleTabChange('attendance');
+            onAttendanceSubPageChange?.('report');
+          }}
+          className={`flex-1 py-1.5 px-0.5 flex flex-col items-center justify-center rounded-2xl transition-all cursor-pointer active:scale-95 ${
+            activeTab === 'attendance' && attendanceSubPage === 'report'
+              ? 'text-[#0072de] bg-blue-50/90 font-bold'
+              : 'text-slate-500 hover:text-slate-800 font-medium'
+          }`}
+        >
+          <TrendingUp className={`w-5 h-5 ${activeTab === 'attendance' && attendanceSubPage === 'report' ? 'stroke-[2.5]' : 'stroke-[1.8]'}`} />
+          <span className="text-[10px] mt-0.5 tracking-tight truncate">
+            Báo cáo
           </span>
         </button>
       </nav>

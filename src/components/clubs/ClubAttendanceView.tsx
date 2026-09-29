@@ -25,8 +25,8 @@ import {
 interface ClubAttendanceViewProps {
   clubId: string;
   onNavigateToStudents?: () => void;
-  initialSubPage?: 'taking' | 'history';
-  onSubPageChange?: (subPage: 'taking' | 'history') => void;
+  initialSubPage?: 'taking' | 'history' | 'report';
+  onSubPageChange?: (subPage: 'taking' | 'history' | 'report') => void;
   onViewStudentDetail?: (studentId: string) => void;
 }
 
@@ -85,12 +85,12 @@ export const ClubAttendanceView: React.FC<ClubAttendanceViewProps> = ({
 
   const currentClub = clubs.find(c => c.id === clubId) || clubs[0];
 
-  // 2 trang trong mục điểm danh: 'taking' (Điểm danh buổi tập) và 'history' (Lịch sử xem điểm danh)
-  const [attendanceSubPage, setAttendanceSubPage] = useState<'taking' | 'history'>(() => {
-    return initialSubPage || (localStorage.getItem('pqq_att_subpage') as 'taking' | 'history') || 'taking';
+  // 3 trang trong mục điểm danh: 'taking' (Điểm danh buổi tập), 'history' (Lịch sử xem điểm danh) và 'report' (Báo cáo chuyên cần)
+  const [attendanceSubPage, setAttendanceSubPage] = useState<'taking' | 'history' | 'report'>(() => {
+    return initialSubPage || (localStorage.getItem('pqq_att_subpage') as 'taking' | 'history' | 'report') || 'taking';
   });
 
-  const handleSubPageChange = (subPage: 'taking' | 'history') => {
+  const handleSubPageChange = (subPage: 'taking' | 'history' | 'report') => {
     setAttendanceSubPage(subPage);
     localStorage.setItem('pqq_att_subpage', subPage);
     if (onSubPageChange) {
@@ -486,14 +486,14 @@ ${absentListStr}
   }, [attendance, currentClub.id, reportTimeframe, reportMonth, reportYear, clubStudents]);
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-200">
+    <div className="space-y-4 animate-in fade-in duration-200 w-full min-w-0 overflow-x-hidden">
       {/* ============================================================== */}
       {/* TRANG 1: MÀN HÌNH ĐIỂM DANH BUỔI TẬP (attendanceSubPage === 'taking') */}
       {/* ============================================================== */}
       {attendanceSubPage === 'taking' && (
         <div className="w-full min-w-0 flex flex-col lg:flex-row gap-3.5 sm:gap-4 items-start">
           {/* KHỐI TRÁI: THẺ ĐIỂM DANH CHÍNH (flex-1 min-w-0 tự động co dãn theo sidebar) */}
-          <div className="flex-1 min-w-0 bg-white rounded-3xl p-4 sm:p-5 border border-slate-200 shadow-xs space-y-3.5 transition-all duration-300">
+          <div className="flex-1 min-w-0 w-full overflow-hidden bg-white rounded-2xl sm:rounded-3xl p-3 sm:p-5 border border-slate-200 shadow-xs space-y-3.5 transition-all duration-300">
             {/* 1A. HEADER DÀNH CHO MOBILE (md:hidden) - GỌN GÀNG, KHÔNG DƯ THỪA CHỖ TRỐNG, TIẾT KIỆM CHIỀU CAO */}
             <div className="md:hidden space-y-2.5 pb-2.5 border-b border-slate-100">
               {/* Hàng 1: Tiêu đề + Thứ, Ngày, Giờ (Trái) & Sĩ số SS, HD, V (Phải) trên CÙNG 1 HÀNG */}
@@ -533,10 +533,10 @@ ${absentListStr}
               <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
-                  onClick={() => setIsReportModalOpen(true)}
+                  onClick={() => handleSubPageChange('report')}
                   className="py-1.5 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-bold text-[11px] shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
                 >
-                  <FileText className="w-3.5 h-3.5 text-[#0072de]" />
+                  <TrendingUp className="w-3.5 h-3.5 text-[#0072de]" />
                   <span className="truncate">Báo Cáo</span>
                 </button>
 
@@ -838,22 +838,22 @@ ${absentListStr}
                           </div>
                         </div>
 
-                        {/* Nút Có / Vắng chuẩn ngón tay + nút mở note khi có mặt */}
+                        {/* Nút Có / Vắng dạng ICON ONLY gọn gàng, không bị tràn trên mobile */}
                         <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
-                          <div className="inline-flex rounded-xl bg-slate-100 p-0.5 border border-slate-200">
+                          <div className="inline-flex rounded-xl bg-slate-100 p-0.5 border border-slate-200 shadow-2xs">
                             <button
                               type="button"
                               onClick={() => {
                                 toggleStudentStatus(student.id, 'PRESENT');
                               }}
-                              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 active:scale-95 ${
+                              className={`w-8 h-8 rounded-lg transition-all cursor-pointer flex items-center justify-center active:scale-90 ${
                                 isPresent
                                   ? 'bg-emerald-600 text-white shadow-xs'
-                                  : 'text-slate-500 hover:text-slate-800'
+                                  : 'text-slate-400 hover:text-slate-700 hover:bg-slate-200/60'
                               }`}
+                              title="Có mặt"
                             >
-                              <Check className="w-3.5 h-3.5" />
-                              <span>Có</span>
+                              <Check className="w-4 h-4 stroke-[2.5]" />
                             </button>
 
                             <button
@@ -864,14 +864,14 @@ ${absentListStr}
                                   handleNoteChange(student.id, 'Có phép');
                                 }
                               }}
-                              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 active:scale-95 ${
+                              className={`w-8 h-8 rounded-lg transition-all cursor-pointer flex items-center justify-center active:scale-90 ${
                                 !isPresent
                                   ? 'bg-rose-600 text-white shadow-xs'
-                                  : 'text-slate-500 hover:text-slate-800'
+                                  : 'text-slate-400 hover:text-slate-700 hover:bg-slate-200/60'
                               }`}
+                              title="Vắng mặt"
                             >
-                              <X className="w-3.5 h-3.5" />
-                              <span>Vắng</span>
+                              <X className="w-4 h-4 stroke-[2.5]" />
                             </button>
                           </div>
 
@@ -880,9 +880,9 @@ ${absentListStr}
                             <button
                               type="button"
                               onClick={() => setOpenNoteStudentId(openNoteStudentId === student.id ? null : student.id)}
-                              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                              className={`w-8 h-8 rounded-lg transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
                                 openNoteStudentId === student.id || hasCustomNote
-                                  ? 'text-[#0072de] bg-blue-50'
+                                  ? 'text-[#0072de] bg-blue-50 border border-blue-200 shadow-2xs'
                                   : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
                               }`}
                               title="Thêm ghi chú"
@@ -1167,6 +1167,228 @@ ${absentListStr}
                 );
               })
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* TRANG 3: MÀN HÌNH BÁO CÁO ĐIỂM DANH CHUYÊN CẦN (attendanceSubPage === 'report') */}
+      {/* ============================================================== */}
+      {attendanceSubPage === 'report' && (
+        <div className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 border border-slate-200 shadow-xs space-y-4 sm:space-y-5 animate-in fade-in duration-200 w-full min-w-0">
+          {/* Thanh tiêu đề có Nút Back & Bộ chọn tháng / năm */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 sm:pb-4 border-b border-slate-100">
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              {/* Nút Back quay lại trang điểm danh buổi tập */}
+              <button
+                type="button"
+                onClick={() => handleSubPageChange('taking')}
+                className="p-2 sm:p-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center cursor-pointer active:scale-95 transition-all shadow-2xs hover:shadow-xs"
+                title="Quay lại điểm danh buổi tập"
+              >
+                <ArrowLeft className="w-5 h-5 text-[#0072de]" />
+              </button>
+
+              <div>
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-[#0072de]" />
+                  <span>Báo Cáo Chuyên Cần</span>
+                </h3>
+                <p className="text-[11px] text-slate-500">
+                  Thống kê tỷ lệ chuyên cần theo {reportTimeframe === 'month' ? 'tháng' : 'năm'} &bull; {currentClub.name}
+                </p>
+              </div>
+            </div>
+
+            {/* Thanh chuyển chế độ: Theo Tháng | Theo Năm */}
+            <div className="flex items-center gap-2 text-xs">
+              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl border border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setReportTimeframe('month')}
+                  className={`px-3 py-1 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+                    reportTimeframe === 'month'
+                      ? 'bg-white text-[#0072de] shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Tháng
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setReportTimeframe('year')}
+                  className={`px-3 py-1 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+                    reportTimeframe === 'year'
+                      ? 'bg-white text-[#0072de] shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Năm
+                </button>
+              </div>
+
+              {/* Bộ chọn tương ứng theo tháng / theo năm */}
+              <div>
+                {reportTimeframe === 'month' ? (
+                  <input
+                    type="month"
+                    value={reportMonth}
+                    onChange={e => setReportMonth(e.target.value)}
+                    className="bg-white border border-slate-200 font-bold text-slate-900 px-2.5 py-1.5 rounded-xl shadow-2xs outline-none cursor-pointer text-xs"
+                  />
+                ) : (
+                  <select
+                    value={reportYear}
+                    onChange={e => setReportYear(parseInt(e.target.value, 10))}
+                    className="bg-white border border-slate-200 font-bold text-slate-900 px-2.5 py-1.5 rounded-xl shadow-2xs outline-none cursor-pointer text-xs"
+                  >
+                    <option value={2027}>Năm 2027</option>
+                    <option value={2026}>Năm 2026</option>
+                    <option value={2025}>Năm 2025</option>
+                    <option value={2024}>Năm 2024</option>
+                  </select>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* KHỐI VÒNG TRÒN TỶ LỆ % CHUYÊN CẦN (CIRCULAR PROGRESS RING) */}
+          <div className="p-4 sm:p-5 bg-gradient-to-br from-slate-50 via-white to-blue-50/40 rounded-3xl border border-slate-200/90 shadow-2xs flex flex-col sm:flex-row items-center justify-around gap-4 sm:gap-6">
+            {/* Vòng tròn SVG */}
+            <div className="relative w-32 h-32 shrink-0 flex items-center justify-center">
+              {(() => {
+                const radius = 44;
+                const circumference = 2 * Math.PI * radius;
+                const ratePercent = Math.min(100, Math.max(0, reportData.overallRate));
+                const strokeOffset = circumference - (ratePercent / 100) * circumference;
+                const strokeColor = ratePercent >= 80 ? '#10b981' : ratePercent >= 60 ? '#0072de' : '#f43f5e';
+
+                return (
+                  <>
+                    <svg className="w-full h-full transform -rotate-90" viewBox="0 0 110 110">
+                      <circle
+                        cx="55"
+                        cy="55"
+                        r={radius}
+                        className="stroke-slate-200"
+                        strokeWidth="9"
+                        fill="transparent"
+                      />
+                      <circle
+                        cx="55"
+                        cy="55"
+                        r={radius}
+                        className="transition-all duration-700 ease-out"
+                        stroke={strokeColor}
+                        strokeWidth="9"
+                        strokeDasharray={circumference}
+                        strokeDashoffset={strokeOffset}
+                        strokeLinecap="round"
+                        fill="transparent"
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                      <span className="text-2xl font-black text-slate-900 leading-none">
+                        {ratePercent}%
+                      </span>
+                      <span className="text-[10.5px] font-bold text-slate-500 mt-1">
+                        Chuyên cần
+                      </span>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+
+            {/* Các chỉ số thống kê bên cạnh vòng tròn */}
+            <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 text-xs w-full sm:w-auto">
+              <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs">
+                <div className="text-slate-400 text-[10.5px] font-medium">Buổi đã điểm danh</div>
+                <div className="font-black text-slate-900 font-mono text-base mt-0.5">{reportData.totalRecordedSessions} buổi</div>
+              </div>
+              <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs">
+                <div className="text-emerald-600 text-[10.5px] font-medium">Tổng lượt có mặt</div>
+                <div className="font-black text-emerald-700 font-mono text-base mt-0.5">{reportData.presentCountTotal} lượt</div>
+              </div>
+              <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs">
+                <div className="text-rose-600 text-[10.5px] font-medium">Tổng lượt vắng</div>
+                <div className="font-black text-rose-700 font-mono text-base mt-0.5">{reportData.absentCountTotal} lượt</div>
+              </div>
+              <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs">
+                <div className="text-[#0072de] text-[10.5px] font-medium">Sĩ số CLB</div>
+                <div className="font-black text-[#0072de] font-mono text-base mt-0.5">{clubStudents.length} võ sinh</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bảng danh sách tỷ lệ chuyên cần từng võ sinh */}
+          <div className="space-y-2">
+            <div className="text-xs font-bold text-slate-800 flex items-center justify-between">
+              <span>Bảng chuyên cần từng võ sinh ({reportTimeframe === 'month' ? `Tháng ${reportMonth.split('-')[1]}` : `Năm ${reportYear}`}):</span>
+              <span className="text-[11px] font-medium text-slate-500">{clubStudents.length} võ sinh</span>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white divide-y divide-slate-100 text-xs overflow-hidden shadow-2xs">
+              {reportData.studentStats.length === 0 ? (
+                <div className="p-8 text-center text-slate-400 text-xs">Chưa có dữ liệu điểm danh</div>
+              ) : (
+                reportData.studentStats.map(({ student, present, absent, rate }, idx) => {
+                  const beltCfg = getBeltConfig(student.currentBelt);
+                  const studentCode = formatStudentClubCode(student, currentClub);
+
+                  return (
+                    <div
+                      key={student.id}
+                      onClick={() => onViewStudentDetail?.(student.id)}
+                      className="p-2.5 sm:p-3 flex items-center justify-between gap-2.5 hover:bg-slate-50 cursor-pointer active:bg-slate-100 transition-colors"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                        <span className="w-5 text-center text-xs font-mono font-bold text-slate-400 shrink-0">
+                          {idx + 1}
+                        </span>
+
+                        <div
+                          className="w-8.5 h-8.5 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden border-2 shrink-0"
+                          style={{ borderColor: beltCfg.borderHex }}
+                        >
+                          {student.avatarUrl ? (
+                            <img src={student.avatarUrl} alt={student.fullName} className="w-full h-full object-cover" />
+                          ) : (
+                            <User className="w-4 h-4 text-slate-400" />
+                          )}
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="font-bold text-slate-900 truncate leading-snug">
+                            {student.fullName}
+                          </div>
+                          <div className="flex items-center gap-1.5 text-[11px] text-slate-500 leading-tight mt-0.5">
+                            <span className="font-mono font-bold text-[#0072de]">{studentCode}</span>
+                            <span className="text-slate-300">&bull;</span>
+                            <span>Có: <strong className="text-emerald-700">{present}</strong></span>
+                            <span className="text-slate-300">&bull;</span>
+                            <span>Vắng: <strong className="text-rose-700">{absent}</strong></span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Badge tỷ lệ % */}
+                      <span
+                        className={`px-2.5 py-1 rounded-xl text-xs font-mono font-bold shrink-0 shadow-2xs ${
+                          rate >= 80
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            : rate >= 60
+                            ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                            : 'bg-rose-50 text-rose-700 border border-rose-200'
+                        }`}
+                      >
+                        {rate}%
+                      </span>
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </div>
         </div>
       )}

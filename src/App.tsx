@@ -31,7 +31,7 @@ interface RouteState {
   view: AppView;
   clubId: string;
   clubTab: ClubWorkspaceTab;
-  attendanceSubPage: 'taking' | 'history';
+  attendanceSubPage: 'taking' | 'history' | 'report';
 }
 
 function parseHashRoute(hash: string): RouteState {
@@ -56,7 +56,7 @@ function parseHashRoute(hash: string): RouteState {
 
     const validTabs: ClubWorkspaceTab[] = ['overview', 'students', 'attendance', 'exam-reg', 'video-submit', 'certificates'];
     const clubTab: ClubWorkspaceTab = validTabs.includes(rawTab as ClubWorkspaceTab) ? (rawTab as ClubWorkspaceTab) : 'overview';
-    const attendanceSubPage = rawSubPage === 'history' ? 'history' : 'taking';
+    const attendanceSubPage = rawSubPage === 'history' ? 'history' : rawSubPage === 'report' ? 'report' : 'taking';
 
     return {
       view: 'club-workspace',
@@ -84,6 +84,9 @@ function buildHashRoute(state: RouteState): string {
   if (state.view === 'club-workspace') {
     if (state.clubTab === 'attendance' && state.attendanceSubPage === 'history') {
       return `#/club/${state.clubId}/attendance/history`;
+    }
+    if (state.clubTab === 'attendance' && state.attendanceSubPage === 'report') {
+      return `#/club/${state.clubId}/attendance/report`;
     }
     if (state.clubTab === 'overview') {
       return `#/club/${state.clubId}`;
@@ -126,7 +129,7 @@ const AppContent: React.FC = () => {
       view: 'home' as AppView,
       clubId: 'clb-pq1',
       clubTab: 'overview' as ClubWorkspaceTab,
-      attendanceSubPage: 'taking' as 'taking' | 'history'
+      attendanceSubPage: 'taking' as 'taking' | 'history' | 'report'
     };
   }, []);
 
@@ -135,7 +138,7 @@ const AppContent: React.FC = () => {
   const [slideDirection, setSlideDirection] = useState<'forward' | 'backward'>('forward');
   const [selectedClubId, setSelectedClubId] = useState<string>(initialRoute.clubId);
   const [currentClubTab, setCurrentClubTab] = useState<ClubWorkspaceTab>(initialRoute.clubTab);
-  const [currentAttendanceSubPage, setCurrentAttendanceSubPage] = useState<'taking' | 'history'>(initialRoute.attendanceSubPage);
+  const [currentAttendanceSubPage, setCurrentAttendanceSubPage] = useState<'taking' | 'history' | 'report'>(initialRoute.attendanceSubPage);
   const [selectedBeltFilter, setSelectedBeltFilter] = useState<string>('ALL');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
